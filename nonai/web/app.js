@@ -5,6 +5,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastFileResult = null;
   let activeBlobUrl = null;
   let currentLang = localStorage.getItem("nonai_lang") || "zh-TW";
+  let activeModalKey = null;
+  let activeTimingKey = null;
 
   // 1. Multilingual Localization Engine
   const langSelect = document.getElementById("langSelect");
@@ -34,6 +36,47 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
+    // Update titles with data-i18n-title
+    document.querySelectorAll("[data-i18n-title]").forEach(el => {
+      const key = el.getAttribute("data-i18n-title");
+      if (t[key]) {
+        el.title = t[key];
+      }
+    });
+
+    // Update text counter labels
+    const rawTextInput = document.getElementById("rawTextInput");
+    const cleanedTextOutput = document.getElementById("cleanedTextOutput");
+    const rawCharCount = document.getElementById("rawCharCount");
+    const cleanCharCount = document.getElementById("cleanCharCount");
+    if (rawCharCount) rawCharCount.textContent = `${t.txt_char_count || "字數："}${rawTextInput ? rawTextInput.value.length : 0}`;
+    if (cleanCharCount) cleanCharCount.textContent = `${t.txt_char_count || "字數："}${cleanedTextOutput ? cleanedTextOutput.value.length : 0}`;
+
+    // Re-render file result card if a file was already processed
+    const fileResultCard = document.getElementById("fileResultCard");
+    if (lastFileResult && fileResultCard && !fileResultCard.classList.contains("hidden")) {
+      renderFileResult(lastFileResult);
+    }
+
+    // Re-render open modal if active
+    const detailModal = document.getElementById("detailModal");
+    if (detailModal && detailModal.open && activeModalKey && lastFileResult) {
+      openExecutionDetailsModal(activeModalKey, lastFileResult);
+    }
+
+    // Re-render timing popover if open
+    const timingPopoverCard = document.getElementById("timingPopoverCard");
+    const timingTitle = document.getElementById("timingTitle");
+    const timingContent = document.getElementById("timingContent");
+    if (activeTimingKey && timingPopoverCard && !timingPopoverCard.classList.contains("hidden")) {
+      const titleKey = `timing_${activeTimingKey}_title`;
+      const descKey = `timing_${activeTimingKey}_desc`;
+      if (t[titleKey] && t[descKey]) {
+        timingTitle.innerHTML = t[titleKey];
+        timingContent.innerHTML = t[descKey];
+      }
+    }
+
     // Update watcher button and status based on state
     updateWatcherUI(isWatcherActive);
   }
@@ -58,33 +101,19 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.classList.add("active");
       btn.setAttribute("aria-selected", "true");
       const targetId = btn.getAttribute("data-tab");
-      document.getElementById(targetId)?.classList.add("active");
+      const targetPanel = document.getElementById(targetId);
+      if (targetPanel) targetPanel.classList.add("active");
     });
   });
 
-  // Helper: Base64 to Blob for robust client-side downloads
-  function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
-    const byteCharacters = atob(b64Data);
-    const byteArrays = [];
-    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-      const slice = byteCharacters.slice(offset, offset + sliceSize);
-      const byteNumbers = new Array(slice.length);
-      for (let i = 0; i < slice.length; i++) {
-        byteNumbers[i] = slice.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      byteArrays.push(byteArray);
-    }
-    return new Blob(byteArrays, { type: contentType });
-  }
-
-  // 3. Drag & Drop File Upload
+  // 3. File Purifier (Workbench)
   const dropZone = document.getElementById("dropZone");
   const fileInput = document.getElementById("fileInput");
   const fileResultCard = document.getElementById("fileResultCard");
-  const fileStatsGrid = document.getElementById("fileStatsGrid");
   const resFileName = document.getElementById("resFileName");
+  const resFileTypeDesc = document.getElementById("resFileTypeDesc");
   const btnDownload = document.getElementById("btnDownload");
+  const fileStatsGrid = document.getElementById("fileStatsGrid");
 
   dropZone.addEventListener("click", () => fileInput.click());
 
@@ -105,35 +134,53 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  fileInput.addEventListener("change", () => {
-    if (fileInput.files.length > 0) {
-      handleFileUpload(fileInput.files[0]);
+  fileInput.addEventListener("change", (e) => {
+    if (e.target.files.length > 0) {
+      handleFileUpload(e.target.files[0]);
     }
   });
 
+  // Base64 to Blob helper
+  function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
+    const byteCharacters = atob(b64Data);
+    const byteArrays = [];
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+      const slice = byteCharacters.slice(offset, offset + sliceSize);
+      const byteNumbers = new Array(slice.length);
+      for (let i = 0; i < slice.length; i++) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      byteArrays.push(byteArray);
+    }
+    return new Blob(byteArrays, { type: contentType });
+  }
+
   async function handleFileUpload(file) {
+    const t = I18N_TRANSLATIONS[currentLang];
+    dropZone.querySelector("h2").textContent = `⏳ ${file.name}...`;
+
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("author", document.getElementById("cfgAuthor").value || "Author");
-    formData.append("rsid_count", document.getElementById("cfgRsidCount").value || 25);
-    formData.append("pdf_spoof", document.getElementById("cfgPdfSpoof").value || "macOS");
+    formData.append("author", document.getElementById("cfgAuthor").value);
+    formData.append("rsid_count", document.getElementById("cfgRsidCount").value);
+    formData.append("pdf_spoof", document.getElementById("cfgPdfSpoof").value);
     formData.append("enable_perturb", document.getElementById("cfgPerturb").checked);
-
-    const t = I18N_TRANSLATIONS[currentLang];
-    dropZone.querySelector("h2").textContent = t.drop_title || "正在進行底層淨化與指紋重構...";
 
     try {
       const resp = await fetch("/api/clean-file", {
         method: "POST",
         body: formData
       });
-      if (!resp.ok) throw new Error("處理失敗");
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.detail || "Upload error");
+      }
       const data = await resp.json();
-
       lastFileResult = data;
       renderFileResult(data);
     } catch (err) {
-      alert("檔案處理時發生錯誤：" + err.message);
+      alert("檔案處理時發生錯誤 / File processing error: " + err.message);
     } finally {
       dropZone.querySelector("h2").textContent = t.drop_title;
       fileInput.value = "";
@@ -144,6 +191,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const t = I18N_TRANSLATIONS[currentLang];
     fileResultCard.classList.remove("hidden");
     resFileName.textContent = `${t.res_clean_prefix || "✅ 已完成淨化："}${data.filename}`;
+    if (resFileTypeDesc) resFileTypeDesc.textContent = t.res_desc || "檔案結構已完成人手特徵偽裝與元資料淨化";
+    if (btnDownload) btnDownload.textContent = t.btn_download || "💾 下載已淨化檔案";
 
     // Memory-safe direct Blob URL generation (Solves Vercel/Serverless download network error)
     if (activeBlobUrl) {
@@ -167,42 +216,42 @@ document.addEventListener("DOMContentLoaded", () => {
       fileStatsGrid.innerHTML = `
         <div class="stat-box clickable" data-inspect="rsid">
           <span class="title">${t.stat_rsid_injected}</span>
-          <span class="val">${s.rsid_injected}</span>
+          <span class="val">${s.rsid_injected} ${t.unit_sessions || ""}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
         <div class="stat-box clickable" data-inspect="runs_split">
           <span class="title">${t.stat_runs_split}</span>
-          <span class="val">${s.runs_split}</span>
+          <span class="val">${s.runs_split} ${t.unit_splits || ""}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
         <div class="stat-box clickable" data-inspect="claude_purged">
           <span class="title">${t.stat_ai_purged || "AI 原生標記抹除"}</span>
-          <span class="val" style="color: var(--success);">${s.claude_signatures_purged || 0} Clean</span>
+          <span class="val" style="color: var(--success);">${s.claude_signatures_purged || 0} ${t.unit_purged || ""}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
         <div class="stat-box clickable" data-inspect="pkg_synthesized">
           <span class="title">${t.stat_pkg_synthesized || "Word 標準結構合規"}</span>
-          <span class="val">${s.missing_parts_synthesized ? s.missing_parts_synthesized.length : 3} Parts</span>
+          <span class="val">${s.missing_parts_synthesized ? s.missing_parts_synthesized.length : 3} ${t.unit_parts || ""}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
         <div class="stat-box clickable" data-inspect="semantic">
           <span class="title">${t.stat_semantic_perturbs || "語意與句構去特徵化"}</span>
-          <span class="val">${s.semantic_replacements || 0}</span>
+          <span class="val">${s.semantic_replacements || 0} ${t.unit_replacements || ""}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
         <div class="stat-box clickable" data-inspect="ghost_styles">
           <span class="title">${t.stat_ghost_removed}</span>
-          <span class="val">${s.ghost_styles_removed}</span>
+          <span class="val">${s.ghost_styles_removed} ${t.unit_styles || ""}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
         <div class="stat-box clickable" data-inspect="unicode">
           <span class="title">${t.stat_unicode_removed}</span>
-          <span class="val">${s.unicode_removed}</span>
+          <span class="val">${s.unicode_removed} ${t.unit_chars || ""}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
         <div class="stat-box clickable" data-inspect="human_time">
           <span class="title">${t.stat_human_minutes}</span>
-          <span class="val">${s.human_editing_minutes} min</span>
+          <span class="val">${s.human_editing_minutes} ${t.unit_minutes || ""}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
         <div class="stat-box clickable" data-inspect="app_spoofed">
@@ -212,38 +261,40 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       `;
     } else if (data.file_type === "pdf") {
+      const pm = (t.modal_details && t.modal_details.pdf_producer) || {};
       fileStatsGrid.innerHTML = `
         <div class="stat-box clickable" data-inspect="pdf_producer">
-          <span class="title">Original Producer</span>
+          <span class="title">${pm.orig_producer || "Original Producer"}</span>
           <span class="val" style="font-size: 0.95rem; color: var(--danger);">${s.original_producer}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
         <div class="stat-box clickable" data-inspect="pdf_producer">
-          <span class="title">Spoofed Producer</span>
+          <span class="title">${pm.spoofed_producer || "Spoofed Producer"}</span>
           <span class="val" style="font-size: 0.95rem; color: var(--success);">${s.spoofed_producer}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
         <div class="stat-box clickable" data-inspect="pdf_producer">
-          <span class="title">Spoofed Creator</span>
+          <span class="title">${pm.spoofed_creator || "Spoofed Creator"}</span>
           <span class="val" style="font-size: 0.95rem;">${s.spoofed_creator}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
         <div class="stat-box clickable" data-inspect="pdf_producer">
-          <span class="title">XMP Metadata Stream</span>
-          <span class="val">${s.xmp_cleaned ? "Purged" : "Clean"}</span>
+          <span class="title">${t.tag_pdf || "PDF XMP"}</span>
+          <span class="val">${s.xmp_cleaned ? (t.unit_purged || "Purged") : (t.txt_status_clean || "Clean")}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
       `;
     } else {
+      const mm = (t.modal_details && t.modal_details.markdown) || {};
       fileStatsGrid.innerHTML = `
         <div class="stat-box clickable" data-inspect="unicode">
           <span class="title">${t.stat_unicode_removed}</span>
-          <span class="val">${s.unicode_removed || 0}</span>
+          <span class="val">${s.unicode_removed || 0} ${t.unit_chars || ""}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
         <div class="stat-box clickable" data-inspect="markdown">
-          <span class="title">Markdown De-perfection</span>
-          <span class="val">${(s.tables_de_perfectionized || 0) + (s.lists_varied || 0)}</span>
+          <span class="title">${mm.title || "Markdown"}</span>
+          <span class="val">${(s.tables_de_perfectionized || 0) + (s.lists_varied || 0)} ${t.unit_replacements || ""}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
       `;
@@ -270,6 +321,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const timingKey = btn.getAttribute("data-timing");
+      activeTimingKey = timingKey;
       const t = I18N_TRANSLATIONS[currentLang];
       const titleKey = `timing_${timingKey}_title`;
       const descKey = `timing_${timingKey}_desc`;
@@ -286,6 +338,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnCloseTiming) {
     btnCloseTiming.addEventListener("click", () => {
       timingPopoverCard.classList.add("hidden");
+      activeTimingKey = null;
     });
   }
 
@@ -298,151 +351,81 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnModalOk = document.getElementById("btnModalOk");
 
   function openExecutionDetailsModal(key, data) {
+    activeModalKey = key;
     const d = data.details || {};
     const s = data.stats || {};
     const t = I18N_TRANSLATIONS[currentLang];
+    const m = (t.modal_details && t.modal_details[key]) || {};
+
+    if (btnModalOk) {
+      btnModalOk.textContent = t.modal_btn_close || t.modal_close || "Close";
+    }
 
     if (key === "rsid") {
       modalIcon.textContent = "🧬";
-      modalTitle.textContent = `${t.stat_rsid_injected} - Forensic Breakdown`;
+      modalTitle.textContent = m.title || t.stat_rsid_injected;
       const pool = d.rsid_pool || [];
+      const subTitle = (m.sub || "Injected RSID Session Pool ({count})").replace("{count}", pool.length);
       modalBody.innerHTML = `
-        <p><strong>What is RSID (Revision Save ID)?</strong><br>
-        RSID is a 4-byte hexadecimal identifier generated by Microsoft Word for each user editing, backspacing, or save action. AI-generated Word documents typically lack RSID or contain only 1 uniform RSID across the whole file.</p>
-
-        <h4>Injected RSID Session Pool (${pool.length} Sessions)</h4>
+        <p>${m.desc || ""}</p>
+        <h4>${subTitle}</h4>
         <div class="detail-badge-list">
           ${pool.map(id => `<span class="detail-badge">0x${id}</span>`).join("")}
         </div>
-
-        <h4>Underlying OpenXML Injection (word/settings.xml)</h4>
+        <h4>word/settings.xml</h4>
         <div class="detail-code-block">&lt;!-- word/settings.xml --&gt;
 &lt;w:rsids&gt;
   &lt;w:rsidRoot w:val="${pool[0] || '003A12B4'}"/&gt;
 ${pool.slice(0, 6).map(id => `  &lt;w:rsid w:val="${id}"/&gt;`).join("\n")}
-  ... (${Math.max(0, pool.length - 6)} additional sessions registered)
+  ... (${Math.max(0, pool.length - 6)} ${t.unit_sessions || "sessions"})
 &lt;/w:rsids&gt;</div>
       `;
     } else if (key === "runs_split") {
       modalIcon.textContent = "✂️";
-      modalTitle.textContent = `${t.stat_runs_split} - Keystroke Simulation`;
+      modalTitle.textContent = m.title || t.stat_runs_split;
       const samples = d.split_samples || [];
+      const descText = (m.desc || "").replace("{count}", s.runs_split || 0);
+      const subTitle = (m.sub || "Run Splitting Samples") + ` (${samples.length})`;
       modalBody.innerHTML = `
-        <p><strong>Why split runs?</strong><br>
-        AI exports write entire paragraphs into a single continuous <code>&lt;w:r&gt;</code> run. Human typing generates multiple fragmented runs because of pauses at commas and periods. NonAI split long runs at <strong>${s.runs_split}</strong> punctuation pause points.</p>
-
-        <h4>Run Splitting Samples (${samples.length} Samples)</h4>
+        <p>${descText}</p>
+        <h4>${subTitle}</h4>
         ${samples.length > 0 ? samples.map((item, idx) => `
           <div class="compare-box" style="margin-bottom: 12px;">
-            <span class="label">Before (Machine Single Node):</span>
+            <span class="label">Before:</span>
             <div style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 6px;">${item.original}</div>
-            <span class="label" style="color: var(--primary);">After (Human Fragmented Runs):</span>
+            <span class="label" style="color: var(--primary);">After:</span>
             <div style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--success);">${item.chunks}</div>
           </div>
-        `).join("") : `<div class="detail-code-block">Long text nodes divided into natural typing pause intervals.</div>`}
-      `;
-    } else if (key === "ghost_styles") {
-      modalIcon.textContent = "🎨";
-      modalTitle.textContent = `${t.stat_ghost_removed} - Ghost Styling Purge`;
-      const items = d.ghost_style_items || [];
-      modalBody.innerHTML = `
-        <p><strong>What is Ghost Styling?</strong><br>
-        Copying from ChatGPT or Claude interfaces pastes web bubble background colors (e.g. <code>#F7F7F8</code>) into <code>&lt;w:shd&gt;</code> tags. NonAI strips all orphan shading and restores clean document styling.</p>
-
-        <h4>Removed Style Elements (${s.ghost_styles_removed} Items)</h4>
-        ${items.length > 0 ? `
-          <div class="detail-code-block">${items.slice(0, 15).join("\n")}${items.length > 15 ? `\n...and ${items.length - 15} more` : ""}</div>
-        ` : `
-          <div class="detail-code-block">No anomalous HEX background colors detected. Document styling is pristine.</div>
-        `}
-      `;
-    } else if (key === "unicode") {
-      modalIcon.textContent = "🔍";
-      modalTitle.textContent = `${t.stat_unicode_removed} - Zero-Width Character Audit`;
-      modalBody.innerHTML = `
-        <p><strong>Invisible Unicode Watermarks:</strong><br>
-        Certain watermarking systems insert zero-width spaces (ZWSP U+200B), non-joiners (ZWNJ U+200C), or BOM (U+FEFF) as binary barcodes. NonAI purges all hidden marks while strictly preserving standard CJK punctuation.</p>
-
-        <div class="detail-comparison">
-          <div class="compare-box before">
-            <span class="label">Detected Anomalies</span>
-            <div style="font-size: 1.1rem; font-weight: 700;">${s.unicode_removed || 0} characters</div>
-          </div>
-          <div class="compare-box after">
-            <span class="label">Post-Purge Status</span>
-            <div style="font-size: 1.1rem; font-weight: 700; color: var(--success);">100% Clean Standard NFC</div>
-          </div>
-        </div>
-      `;
-    } else if (key === "human_time") {
-      modalIcon.textContent = "⏱️";
-      modalTitle.textContent = `${t.stat_human_minutes} - Editing Timeline`;
-      const meta = d.metadata_spoof_details || {};
-      modalBody.innerHTML = `
-        <p><strong>Typing Duration Vulnerability:</strong><br>
-        AI exports typically leave <code>&lt;TotalTime&gt;0&lt;/TotalTime&gt;</code> in <code>docProps/app.xml</code>. NonAI injects a calculated human typing duration.</p>
-
-        <h4>Biomimetic Model</h4>
-        <ul>
-          <li><strong>Estimated Duration:</strong> ${meta.total_time_minutes || s.human_editing_minutes} minutes (based on 35 WPM + thinking intervals)</li>
-          <li><strong>Revision Count:</strong> Revision #${meta.revision || 12}</li>
-          <li><strong>Spoofed Creation:</strong> <code>${meta.created_time || "Calculated"}</code></li>
-          <li><strong>Spoofed Modification:</strong> <code>${meta.modified_time || "Calculated"}</code></li>
-        </ul>
-      `;
-    } else if (key === "app_spoofed") {
-      modalIcon.textContent = "💻";
-      modalTitle.textContent = `${t.stat_app_spoofed} - Metadata Overwrite`;
-      const meta = d.metadata_spoof_details || {};
-      modalBody.innerHTML = `
-        <p><strong>Application Metadata:</strong><br>
-        Replaced library signatures (e.g. python-docx) with genuine Microsoft Office Word properties.</p>
-
-        <div class="detail-code-block">&lt;!-- docProps/app.xml --&gt;
-&lt;Application&gt;Microsoft Office Word&lt;/Application&gt;
-&lt;AppVersion&gt;16.0000&lt;/AppVersion&gt;
-&lt;DocSecurity&gt;0&lt;/DocSecurity&gt;
-
-&lt;!-- docProps/core.xml --&gt;
-&lt;dc:creator&gt;${meta.author || "Author"}&lt;/dc:creator&gt;
-&lt;cp:lastModifiedBy&gt;${meta.author || "Author"}&lt;/cp:lastModifiedBy&gt;
-&lt;cp:revision&gt;${meta.revision || 12}&lt;/cp:revision&gt;</div>
+        `).join("") : `<div class="detail-code-block">${m.sample_desc || "Natural fragmented runs."}</div>`}
       `;
     } else if (key === "claude_purged") {
       modalIcon.textContent = "🛡️";
-      modalTitle.textContent = `${t.stat_ai_purged || "AI 原生標記抹除"} - Provenance Scrub`;
+      modalTitle.textContent = m.title || t.stat_ai_purged;
+      const itemsList = m.items || [];
       modalBody.innerHTML = `
-        <p><strong>Fatal Leak #1 Resolved: Explicit AI Provenance</strong><br>
-        AI tools (such as Claude Docs) leave identification markers in <code>docProps/core.xml</code> (e.g. <code>&lt;dc:description&gt;Claude Docs node/...&lt;/dc:description&gt;</code>) and inject <code>customXml/</code> packages. Forensic analyzers identify these as hard proof of AI generation rather than inference.</p>
-
-        <h4>Forensic Actions Executed</h4>
+        <p>${m.desc || ""}</p>
+        <h4>${m.sub || ""}</h4>
         <ul>
-          <li><strong>Purged Tags:</strong> Removed <code>&lt;dc:description&gt;</code>, cleared custom keywords, category, and subject tags.</li>
-          <li><strong>Custom Package Purged:</strong> Stripped <code>customXml/</code> and <code>docProps/custom.xml</code>.</li>
-          <li><strong>Global String Purge:</strong> Scanned all XML streams to eliminate any occurrences of <code>Claude Docs</code>, <code>Anthropic</code>, <code>ChatGPT</code>, <code>python-docx</code>.</li>
+          ${itemsList.map(it => `<li>${it}</li>`).join("")}
         </ul>
-        <div class="detail-code-block">&lt;!-- Cleaned docProps/core.xml --&gt;
+        <div class="detail-code-block">&lt;!-- docProps/core.xml --&gt;
 &lt;cp:coreProperties xmlns:cp="..." xmlns:dc="..."&gt;
   &lt;dc:title&gt;...&lt;/dc:title&gt;
-  &lt;!-- &lt;dc:description&gt;Claude Docs...&lt;/dc:description&gt; [PERMANENTLY REMOVED] --&gt;
+  &lt;!-- &lt;dc:description&gt;Claude Docs...&lt;/dc:description&gt; [PURGED] --&gt;
   &lt;cp:revision&gt;${(d.metadata_spoof_details || {}).revision || 32}&lt;/cp:revision&gt;
   &lt;dc:creator&gt;${(d.metadata_spoof_details || {}).author || "Author"}&lt;/dc:creator&gt;
 &lt;/cp:coreProperties&gt;</div>
       `;
     } else if (key === "pkg_synthesized") {
       modalIcon.textContent = "📦";
-      modalTitle.textContent = `${t.stat_pkg_synthesized || "Word 標準結構合規"} - Package Integrity`;
+      modalTitle.textContent = m.title || t.stat_pkg_synthesized;
       const parts = d.missing_parts_synthesized || ["word/fontTable.xml", "word/webSettings.xml", "word/theme/theme1.xml"];
+      const itemsList = m.items || [];
       modalBody.innerHTML = `
-        <p><strong>Fatal Leak #2 Resolved: Incomplete Word Package Manifest</strong><br>
-        When genuine Microsoft Word saves a document, it unconditionally writes <code>fontTable.xml</code>, <code>webSettings.xml</code>, and <code>theme1.xml</code>. AI exporters omit these files, allowing forensic tools to easily expose fake application metadata.</p>
-
-        <h4>Synthesized Office Components</h4>
+        <p>${m.desc || ""}</p>
+        <h4>${m.sub || ""}</h4>
         <ul>
-          <li><code>word/fontTable.xml</code>: Standard Calibri, Times New Roman, PMingLiU, and Microsoft JhengHei character tables.</li>
-          <li><code>word/webSettings.xml</code>: Browser optimization and PNG rendering flags.</li>
-          <li><code>word/theme/theme1.xml</code>: Official Microsoft Office theme color and font scheme.</li>
-          <li><code>[Content_Types].xml</code> & <code>document.xml.rels</code>: Fully registered with standard OpenXML schemas.</li>
+          ${itemsList.map(it => `<li>${it}</li>`).join("")}
         </ul>
         <div class="detail-badge-list">
           ${parts.map(p => `<span class="detail-badge" style="color: var(--success); border-color: rgba(16,185,129,0.3);">${p}</span>`).join("")}
@@ -450,42 +433,109 @@ ${pool.slice(0, 6).map(id => `  &lt;w:rsid w:val="${id}"/&gt;`).join("\n")}
       `;
     } else if (key === "semantic") {
       modalIcon.textContent = "🧠";
-      modalTitle.textContent = `${t.stat_semantic_perturbs || "語意與句構去特徵化"} - Transformer Neural Shield`;
+      modalTitle.textContent = m.title || t.stat_semantic_perturbs;
+      const itemsList = (m.items || []).map(it =>
+        it.replace("{replacements}", s.semantic_replacements || 0)
+          .replace("{reorganized}", s.semantic_reorganized || 0)
+      );
       modalBody.innerHTML = `
-        <p><strong>Fatal Leak #3 Resolved: Neural Transformer Classification & Clichés</strong><br>
-        Neural detectors (e.g. OmniTraces INT8) analyze text perplexity distributions, burstiness, and formulaic academic parallelism. NonAI transforms rigid AI clichés into authentic, human-authored academic prose.</p>
-
-        <h4>Neural Disruption Metrics</h4>
+        <p>${m.desc || ""}</p>
+        <h4>${m.sub || ""}</h4>
         <ul>
-          <li><strong>AI Clichés & Formulas Replaced:</strong> ${s.semantic_replacements || 0} occurrences</li>
-          <li><strong>Sentence Lengths & Semicolons Reorganized:</strong> ${s.semantic_reorganized || 0} clauses</li>
-          <li><strong>N-Gram Prediction Chain:</strong> Disrupted SynthID green-token distribution across all text nodes</li>
+          ${itemsList.map(it => `<li>${it}</li>`).join("")}
         </ul>
-        <p>Formulaic triples (e.g. <em>「學術上，...。實務上，...。社會面上，...」</em>) and robotic catchphrases (e.g. <em>「方法論本身就是主角」</em>) are rewritten into varied, natural academic discourse.</p>
+      `;
+    } else if (key === "ghost_styles") {
+      modalIcon.textContent = "🎨";
+      modalTitle.textContent = m.title || t.stat_ghost_removed;
+      const items = d.ghost_style_items || [];
+      const subTitle = (m.sub || "") + ` (${s.ghost_styles_removed || 0})`;
+      modalBody.innerHTML = `
+        <p>${m.desc || ""}</p>
+        <h4>${subTitle}</h4>
+        ${items.length > 0 ? `
+          <div class="detail-code-block">${items.slice(0, 15).join("\n")}${items.length > 15 ? `\n... (+${items.length - 15})` : ""}</div>
+        ` : `
+          <div class="detail-code-block">0 anomalous styles</div>
+        `}
+      `;
+    } else if (key === "unicode") {
+      modalIcon.textContent = "🔍";
+      modalTitle.textContent = m.title || t.stat_unicode_removed;
+      modalBody.innerHTML = `
+        <p>${m.desc || ""}</p>
+        <div class="detail-comparison">
+          <div class="compare-box before">
+            <span class="label">${m.before_label || "Detected"}</span>
+            <div style="font-size: 1.1rem; font-weight: 700;">${s.unicode_removed || 0} ${t.unit_chars || ""}</div>
+          </div>
+          <div class="compare-box after">
+            <span class="label">${m.after_label || "Status"}</span>
+            <div style="font-size: 1.1rem; font-weight: 700; color: var(--success);">${m.clean_status || "Clean"}</div>
+          </div>
+        </div>
+      `;
+    } else if (key === "human_time") {
+      modalIcon.textContent = "⏱️";
+      modalTitle.textContent = m.title || t.stat_human_minutes;
+      const meta = d.metadata_spoof_details || {};
+      const mins = meta.total_time_minutes || s.human_editing_minutes || 0;
+      const rev = meta.revision || 12;
+      const created = meta.created_time || "Calculated";
+      const modified = meta.modified_time || "Calculated";
+      const itemsList = (m.items || []).map(it =>
+        it.replace("{minutes}", mins)
+          .replace("{revision}", rev)
+          .replace("{created}", created)
+          .replace("{modified}", modified)
+      );
+      modalBody.innerHTML = `
+        <p>${m.desc || ""}</p>
+        <h4>${m.sub || ""}</h4>
+        <ul>
+          ${itemsList.map(it => `<li>${it}</li>`).join("")}
+        </ul>
+      `;
+    } else if (key === "app_spoofed") {
+      modalIcon.textContent = "💻";
+      modalTitle.textContent = m.title || t.stat_app_spoofed;
+      const meta = d.metadata_spoof_details || {};
+      modalBody.innerHTML = `
+        <p>${m.desc || ""}</p>
+        <h4>${m.code_title || "docProps XML"}</h4>
+        <div class="detail-code-block">&lt;!-- docProps/app.xml --&gt;
+&lt;Application&gt;Microsoft Office Word&lt;/Application&gt;
+&lt;AppVersion&gt;16.0000&lt;/AppVersion&gt;
+
+&lt;!-- docProps/core.xml --&gt;
+&lt;dc:creator&gt;${meta.author || "Author"}&lt;/dc:creator&gt;
+&lt;cp:lastModifiedBy&gt;${meta.author || "Author"}&lt;/cp:lastModifiedBy&gt;
+&lt;cp:revision&gt;${meta.revision || 12}&lt;/cp:revision&gt;</div>
       `;
     } else if (key === "pdf_producer") {
       modalIcon.textContent = "📄";
-      modalTitle.textContent = "PDF Metadata & XMP Stream Purge";
+      modalTitle.textContent = m.title || "PDF Producer";
       modalBody.innerHTML = `
+        <p>${m.desc || ""}</p>
         <div class="detail-comparison">
           <div class="compare-box before">
-            <span class="label">Original Producer</span>
+            <span class="label">${m.orig_producer || "Original Producer"}</span>
             <div style="font-family: var(--font-mono); font-size: 0.85rem;">${s.original_producer || "None"}</div>
           </div>
           <div class="compare-box after">
-            <span class="label">Spoofed Producer</span>
+            <span class="label">${m.spoofed_producer || "Spoofed Producer"}</span>
             <div style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--success);">${s.spoofed_producer}</div>
           </div>
         </div>
-        <p><strong>Spoofed Creator:</strong> <code>${s.spoofed_creator}</code><br>
-        <strong>XMP Stream Status:</strong> ${s.xmp_cleaned ? "✅ Purged from catalog root" : "Clean"}</p>
+        <p style="margin-top: 10px;"><strong>${m.spoofed_creator || "Spoofed Creator"}:</strong> <code>${s.spoofed_creator}</code><br>
+        <strong>XMP Stream Status:</strong> ${s.xmp_cleaned ? "✅ " + (t.unit_purged || "Purged") : "Clean"}</p>
       `;
     } else if (key === "markdown") {
       modalIcon.textContent = "📝";
-      modalTitle.textContent = "Markdown Structure De-perfection";
+      modalTitle.textContent = m.title || "Markdown";
       modalBody.innerHTML = `
-        <p>Transformed robotic aligned table columns into natural human hand-typed formats and varied list indentation.</p>
-        <p><strong>Adjustments:</strong> ${s.tables_de_perfectionized || 0} table rows, ${s.lists_varied || 0} list items.</p>
+        <p>${m.desc || ""}</p>
+        <p><strong>${t.stat_semantic_perturbs || "Adjustments"}:</strong> ${s.tables_de_perfectionized || 0} table rows, ${s.lists_varied || 0} list items.</p>
       `;
     }
 
@@ -493,8 +543,14 @@ ${pool.slice(0, 6).map(id => `  &lt;w:rsid w:val="${id}"/&gt;`).join("\n")}
   }
 
   // Close modal controls
-  btnCloseModal.addEventListener("click", () => detailModal.close());
-  btnModalOk.addEventListener("click", () => detailModal.close());
+  btnCloseModal.addEventListener("click", () => {
+    detailModal.close();
+    activeModalKey = null;
+  });
+  btnModalOk.addEventListener("click", () => {
+    detailModal.close();
+    activeModalKey = null;
+  });
 
   // Light-dismiss fallback
   if (!('closedBy' in HTMLDialogElement.prototype)) {
@@ -507,7 +563,10 @@ ${pool.slice(0, 6).map(id => `  &lt;w:rsid w:val="${id}"/&gt;`).join("\n")}
         rect.left <= event.clientX &&
         event.clientX <= rect.left + rect.width
       );
-      if (!isInside) detailModal.close();
+      if (!isInside) {
+        detailModal.close();
+        activeModalKey = null;
+      }
     });
   }
 

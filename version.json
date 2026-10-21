@@ -1,7 +1,7 @@
 {
-  "version": "1.1.0",
-  "release_date": "2026-10-21",
-  "bump_level": "minor",
-  "description": "Cross-format forensic hardening (DOCX/PDF/MD/TXT), Claude Docs provenance eradication, Microsoft Word package synthesis, and neural transformer de-patterning.",
-  "timestamp": "2026-10-21T22:53:07.023018"
+  "version": "1.1.1",
+  "release_date": "2026-10-22",
+  "bump_level": "patch",
+  "description": "Overhaul multilingual UI consistency across 7 languages, fix hardcoded modal text, user manual, and timing controls",
+  "timestamp": "2026-10-22T00:22:52.494894"
 }
