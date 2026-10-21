@@ -165,8 +165,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
       const isZh = currentLang.startsWith("zh");
       const errMsg = isZh
-        ? `⚠️ 上傳失敗：檔案大小為 ${fileSizeMB} MB，超過雲端伺服器 4.5 MB 單次傳輸限制。\n\n【建議解決方式】\n1. 建議將 Word/PDF 內的高解析度圖片壓縮後再重新上傳。\n2. 或在電腦終端機執行 python run_web.py，享有 100% 完全離線、無檔案大小上限處理！`
-        : `⚠️ Upload Failed: File size is ${fileSizeMB} MB, exceeding the 4.5 MB serverless limit.\n\n【Recommendations】\n1. Compress high-resolution images in your document before uploading.\n2. Or run 'python run_web.py' locally for 100% offline processing with no file size limits!`;
+        ? `⚠️ 上傳失敗：檔案大小為 ${fileSizeMB} MB，超過雲端伺服器 4.5 MB 單次傳輸限制。\n\n【建議解決方式】\n1. 建議將 Word/PDF 內的高解析度圖片壓縮後再重新上傳。\n2. 或於電腦終端機切換至專案資料夾執行完整指令：\n   cd nonai && python3 run_web.py\n   （若尚未下載專案，請先執行：git clone https://github.com/hauchiehlin-ops/nonai.git && cd nonai && python3 run_web.py）\n   享有 100% 完全本機離線運算、無檔案大小上限處理！`
+        : `⚠️ Upload Failed: File size is ${fileSizeMB} MB, exceeding the 4.5 MB serverless limit.\n\n【Recommendations】\n1. Compress high-resolution images in your document before uploading.\n2. Or navigate to the project folder in your terminal and run the full command:\n   cd nonai && python3 run_web.py\n   (If not cloned yet: git clone https://github.com/hauchiehlin-ops/nonai.git && cd nonai && python3 run_web.py)\n   Enjoy 100% local offline processing with no file size limits!`;
       alert(errMsg);
       dropZone.querySelector("h2").textContent = t.drop_title;
       fileInput.value = "";
@@ -191,8 +191,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (resp.status === 413) {
           const isZh = currentLang.startsWith("zh");
           const errMsg = isZh
-            ? "⚠️ 伺服器回傳 413 (Payload Too Large)：檔案超過雲端 4.5 MB 限制。請壓縮文件中的大型圖片後再重試，或於本機執行 python run_web.py。"
-            : "⚠️ Server returned 413 (Payload Too Large): The file exceeds the 4.5 MB serverless limit. Please compress images or run locally via 'python run_web.py'.";
+            ? "⚠️ 伺服器回傳 413 (Payload Too Large)：檔案超過雲端 4.5 MB 限制。\n\n【建議解決方式】\n1. 請壓縮文件中的大型圖片後再重試。\n2. 或於電腦終端機切換至專案資料夾執行完整指令：\n   cd nonai && python3 run_web.py\n   （若尚未下載專案：git clone https://github.com/hauchiehlin-ops/nonai.git && cd nonai && python3 run_web.py）\n   享有 100% 完全本機離線、無檔案大小上限處理！"
+            : "⚠️ Server returned 413 (Payload Too Large): The file exceeds the 4.5 MB serverless limit.\n\n【Recommendations】\n1. Please compress large images and try again.\n2. Or navigate to the project directory in your terminal and run:\n   cd nonai && python3 run_web.py\n   (First time: git clone https://github.com/hauchiehlin-ops/nonai.git && cd nonai && python3 run_web.py)\n   Enjoy 100% local offline processing with no file size limits!";
           throw new Error(errMsg);
         }
         const errData = await resp.json().catch(() => ({}));
