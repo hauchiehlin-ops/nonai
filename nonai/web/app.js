@@ -8,6 +8,14 @@ document.addEventListener("DOMContentLoaded", () => {
   let activeModalKey = null;
   let activeTimingKey = null;
 
+  // Global Modal References
+  const detailModal = document.getElementById("detailModal");
+  const modalTitle = document.getElementById("modalTitle");
+  const modalIcon = document.getElementById("modalIcon");
+  const modalBody = document.getElementById("modalBody");
+  const btnCloseModal = document.getElementById("btnCloseModal");
+  const btnModalOk = document.getElementById("btnModalOk");
+
   // 1. Multilingual Localization Engine
   const langSelect = document.getElementById("langSelect");
 
@@ -59,7 +67,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Re-render open modal if active
-    const detailModal = document.getElementById("detailModal");
     if (detailModal && detailModal.open && activeModalKey && lastFileResult) {
       openExecutionDetailsModal(activeModalKey, lastFileResult);
     }
@@ -156,6 +163,76 @@ document.addEventListener("DOMContentLoaded", () => {
     return new Blob(byteArrays, { type: contentType });
   }
 
+  // Payload Size Limit Modal (Allows 1-Click Copy of Local Execution Commands)
+  function showPayloadLimitModal(fileSizeMB) {
+    const isZh = currentLang.startsWith("zh");
+    const t = I18N_TRANSLATIONS[currentLang];
+    activeModalKey = "payload_limit";
+    modalIcon.textContent = "⚡";
+    modalTitle.textContent = isZh ? "檔案大小超過雲端限制 (4.5 MB)" : "File Exceeds Serverless Limit (4.5 MB)";
+    if (btnModalOk) {
+      btnModalOk.textContent = t.modal_btn_close || t.modal_close || (isZh ? "確定關閉" : "Close");
+    }
+
+    modalBody.innerHTML = `
+      <div style="font-size: 0.95rem; line-height: 1.6; margin-bottom: 8px;">
+        <p style="margin-bottom: 12px;">
+          <strong>${isZh ? "檔案大小：" : "File Size:"}</strong> <span style="color: var(--warning); font-weight: 700;">${fileSizeMB || "> 4.5"} MB</span>（${isZh ? "已超過雲端託管單次 4.5 MB 傳輸限制" : "Exceeds 4.5 MB serverless limit"}）
+        </p>
+        <p style="color: var(--text-muted); margin-bottom: 16px;">
+          ${isZh ? "【建議解決方式】<br>1. 建議將 Word/PDF 內的高解析度圖片壓縮後再重新上傳。<br>2. <strong>或於本機電腦終端機直接執行（支援無大小上限、100% 離線處理）：</strong>" : "【Recommendations】<br>1. Compress high-resolution images in your document and re-upload.<br>2. <strong>Or run directly on your local machine (100% offline, no size limits):</strong>"}
+        </p>
+
+        <!-- Command 1: If repository is already cloned -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">${isZh ? "💻 方式一：若已有專案目錄（進入資料夾啟動）" : "💻 Option 1: If already cloned (cd and run)"}</span>
+            <button type="button" class="btn btn-sm btn-primary copy-cmd-btn" data-copy="cd nonai && python3 run_web.py" style="padding: 4px 12px; font-size: 0.82rem;">📋 複製指令</button>
+          </div>
+          <pre style="margin: 0; background: #0b0f19; padding: 10px 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; color: #10b981; overflow-x: auto; user-select: all;"><code>cd nonai && python3 run_web.py</code></pre>
+        </div>
+
+        <!-- Command 2: Full clone from scratch -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">${isZh ? "🚀 方式二：首次使用完整指令（包含 Git 下載與進入資料夾）" : "🚀 Option 2: Full first-time setup (Git clone & run)"}</span>
+            <button type="button" class="btn btn-sm btn-primary copy-cmd-btn" data-copy="git clone https://github.com/hauchiehlin-ops/nonai.git && cd nonai && python3 run_web.py" style="padding: 4px 12px; font-size: 0.82rem;">📋 複製完整指令</button>
+          </div>
+          <pre style="margin: 0; background: #0b0f19; padding: 10px 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; color: #38bdf8; overflow-x: auto; user-select: all;"><code>git clone https://github.com/hauchiehlin-ops/nonai.git && cd nonai && python3 run_web.py</code></pre>
+        </div>
+      </div>
+    `;
+
+    // Attach copy event listeners with visual feedback
+    modalBody.querySelectorAll(".copy-cmd-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const cmd = btn.getAttribute("data-copy");
+        try {
+          await navigator.clipboard.writeText(cmd);
+          const origText = btn.textContent;
+          btn.textContent = isZh ? "✅ 已複製！" : "✅ Copied!";
+          btn.style.backgroundColor = "var(--success)";
+          setTimeout(() => {
+            btn.textContent = origText;
+            btn.style.backgroundColor = "";
+          }, 2000);
+        } catch {
+          // Fallback selection
+          const pre = btn.closest("div").nextElementSibling;
+          if (pre) {
+            const range = document.createRange();
+            range.selectNodeContents(pre);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
+        }
+      });
+    });
+
+    detailModal.showModal();
+  }
+
   async function handleFileUpload(file) {
     const t = I18N_TRANSLATIONS[currentLang];
 
@@ -163,11 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const MAX_FILE_SIZE = 4.2 * 1024 * 1024; // 4.2MB safe threshold
     if (file.size > MAX_FILE_SIZE) {
       const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      const isZh = currentLang.startsWith("zh");
-      const errMsg = isZh
-        ? `⚠️ 上傳失敗：檔案大小為 ${fileSizeMB} MB，超過雲端伺服器 4.5 MB 單次傳輸限制。\n\n【建議解決方式】\n1. 建議將 Word/PDF 內的高解析度圖片壓縮後再重新上傳。\n2. 或於電腦終端機切換至專案資料夾執行完整指令：\n   cd nonai && python3 run_web.py\n   （若尚未下載專案，請先執行：git clone https://github.com/hauchiehlin-ops/nonai.git && cd nonai && python3 run_web.py）\n   享有 100% 完全本機離線運算、無檔案大小上限處理！`
-        : `⚠️ Upload Failed: File size is ${fileSizeMB} MB, exceeding the 4.5 MB serverless limit.\n\n【Recommendations】\n1. Compress high-resolution images in your document before uploading.\n2. Or navigate to the project folder in your terminal and run the full command:\n   cd nonai && python3 run_web.py\n   (If not cloned yet: git clone https://github.com/hauchiehlin-ops/nonai.git && cd nonai && python3 run_web.py)\n   Enjoy 100% local offline processing with no file size limits!`;
-      alert(errMsg);
+      showPayloadLimitModal(fileSizeMB);
       dropZone.querySelector("h2").textContent = t.drop_title;
       fileInput.value = "";
       return;
@@ -189,11 +262,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       if (!resp.ok) {
         if (resp.status === 413) {
-          const isZh = currentLang.startsWith("zh");
-          const errMsg = isZh
-            ? "⚠️ 伺服器回傳 413 (Payload Too Large)：檔案超過雲端 4.5 MB 限制。\n\n【建議解決方式】\n1. 請壓縮文件中的大型圖片後再重試。\n2. 或於電腦終端機切換至專案資料夾執行完整指令：\n   cd nonai && python3 run_web.py\n   （若尚未下載專案：git clone https://github.com/hauchiehlin-ops/nonai.git && cd nonai && python3 run_web.py）\n   享有 100% 完全本機離線、無檔案大小上限處理！"
-            : "⚠️ Server returned 413 (Payload Too Large): The file exceeds the 4.5 MB serverless limit.\n\n【Recommendations】\n1. Please compress large images and try again.\n2. Or navigate to the project directory in your terminal and run:\n   cd nonai && python3 run_web.py\n   (First time: git clone https://github.com/hauchiehlin-ops/nonai.git && cd nonai && python3 run_web.py)\n   Enjoy 100% local offline processing with no file size limits!";
-          throw new Error(errMsg);
+          const fileSizeMB = file ? (file.size / (1024 * 1024)).toFixed(1) : "4.5+";
+          showPayloadLimitModal(fileSizeMB);
+          return;
         }
         const errData = await resp.json().catch(() => ({}));
         throw new Error(errData.detail || `Upload error (${resp.status})`);
@@ -365,13 +436,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 5. Execution Details Modal Logic
-  const detailModal = document.getElementById("detailModal");
-  const modalTitle = document.getElementById("modalTitle");
-  const modalIcon = document.getElementById("modalIcon");
-  const modalBody = document.getElementById("modalBody");
-  const btnCloseModal = document.getElementById("btnCloseModal");
-  const btnModalOk = document.getElementById("btnModalOk");
-
   function openExecutionDetailsModal(key, data) {
     activeModalKey = key;
     const d = data.details || {};
