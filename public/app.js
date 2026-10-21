@@ -215,19 +215,30 @@ document.addEventListener("DOMContentLoaded", () => {
         <!-- Command 1: If repository is already cloned -->
         <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">${isZh ? "💻 方式一：若已有專案目錄（進入資料夾啟動）" : "💻 Option 1: If already cloned (cd and run)"}</span>
-            <button type="button" class="btn btn-sm btn-primary copy-cmd-btn" data-copy="cd /Volumes/Mobil/GitMobil/NonAI && python3 run_web.py" style="padding: 4px 12px; font-size: 0.82rem;">📋 複製指令</button>
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">${isZh ? "💻 方式一：若已下載專案（預設「下載」目錄啟動）" : "💻 Option 1: If already downloaded (Launch from ~/Downloads/NonAI)"}</span>
+            <button type="button" class="btn btn-sm btn-primary copy-cmd-btn" data-copy="cd ~/Downloads/NonAI && python3 run_web.py" style="padding: 4px 12px; font-size: 0.82rem;">📋 複製指令</button>
           </div>
-          <pre style="margin: 0; background: #0b0f19; padding: 10px 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; color: #10b981; overflow-x: auto; user-select: all;"><code>cd /Volumes/Mobil/GitMobil/NonAI && python3 run_web.py</code></pre>
+          <pre style="margin: 0; background: #0b0f19; padding: 10px 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; color: #10b981; overflow-x: auto; user-select: all;"><code>cd ~/Downloads/NonAI && python3 run_web.py</code></pre>
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 6px;">
+            ${isZh ? "💡 提示：若您將專案放置於其他目錄，請於終端機進入該目錄後直接執行 <code>python3 run_web.py</code> 即可。" : "💡 Tip: If placed in another custom folder, navigate into it and run <code>python3 run_web.py</code>."}
+          </div>
         </div>
 
         <!-- Command 2: Full clone from scratch into user's Downloads/NonAI -->
-        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">${isZh ? "🚀 方式二：首次使用完整指令（自動下載至本機「下載」資料夾 NonAI 並啟動）" : "🚀 Option 2: First-time setup (Download to ~/Downloads/NonAI and run)"}</span>
             <button type="button" class="btn btn-sm btn-primary copy-cmd-btn" data-copy="git clone https://github.com/hauchiehlin-ops/nonai.git ~/Downloads/NonAI && cd ~/Downloads/NonAI && python3 run_web.py" style="padding: 4px 12px; font-size: 0.82rem;">📋 複製完整指令</button>
           </div>
           <pre style="margin: 0; background: #0b0f19; padding: 10px 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; color: #38bdf8; overflow-x: auto; user-select: all;"><code>git clone https://github.com/hauchiehlin-ops/nonai.git ~/Downloads/NonAI && cd ~/Downloads/NonAI && python3 run_web.py</code></pre>
+        </div>
+
+        <!-- Alternative: No Git ZIP download option -->
+        <div style="background: rgba(99, 102, 241, 0.08); border: 1px dashed rgba(99, 102, 241, 0.3); border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.82rem; color: var(--text-main);">
+            ${isZh ? "📦 電腦未安裝 Git？可直接下載程式壓縮檔：" : "📦 Don't have Git installed? Download the source ZIP:"}
+          </span>
+          <a href="https://github.com/hauchiehlin-ops/nonai/archive/refs/heads/main.zip" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="padding: 3px 10px; font-size: 0.8rem; background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main); text-decoration: none;">📥 下載 ZIP 檔</a>
         </div>
       </div>
     `;
