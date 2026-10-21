@@ -1,0 +1,17 @@
+{
+  "name": "NonAI - AI 數位指紋與隱藏痕跡消除系統",
+  "short_name": "NonAI",
+  "description": "專業級 AI 數位指紋消除工具，提供 DOCX RSID 仿生注入、PDF XMP 元資料偽裝、零寬度 Unicode 淨化與系統剪貼簿即時守護。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0f19",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

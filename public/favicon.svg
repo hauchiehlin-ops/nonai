@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#090d16" />
+    </linearGradient>
+
+    <!-- Shield Primary Gradient -->
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="50%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+
+    <!-- Emerald Glow for Clean / Purified State -->
+    <linearGradient id="cleanGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+
+    <!-- Outer Rim Glow -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Rounded Squircle Base -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+
+  <!-- Subtle Tech Circuit Grid -->
+  <path d="M64 160h60l40 40h70 M448 352h-60l-40-40h-70" stroke="#334155" stroke-width="3" stroke-linecap="round" opacity="0.4" fill="none" />
+  <circle cx="124" cy="160" r="4" fill="#38bdf8" opacity="0.6" />
+  <circle cx="388" cy="352" r="4" fill="#38bdf8" opacity="0.6" />
+
+  <!-- Outer Cyber Shield Contour -->
+  <path d="M256 68 L400 120 C400 270 340 376 256 432 C172 376 112 270 112 120 Z" 
+        fill="none" stroke="url(#shieldGrad)" stroke-width="12" stroke-linejoin="round" filter="url(#glow)" opacity="0.85" />
+
+  <!-- Inner Protective Shield Solid -->
+  <path d="M256 86 L384 132 C384 262 332 356 256 408 C180 356 128 262 128 132 Z" 
+        fill="#0f172a" stroke="url(#shieldGrad)" stroke-width="6" stroke-linejoin="round" />
+
+  <!-- Purifying Digital Fingerprint Arcs (De-watermarking Visualization) -->
+  <!-- Left Side: Unscrambled / Purified (Clean Emerald) -->
+  <path d="M220 220 A 40 40 0 0 0 220 280" fill="none" stroke="url(#cleanGlow)" stroke-width="10" stroke-linecap="round" />
+  <path d="M200 190 A 75 75 0 0 0 200 310" fill="none" stroke="url(#cleanGlow)" stroke-width="10" stroke-linecap="round" />
+  <path d="M180 160 A 110 110 0 0 0 180 340" fill="none" stroke="url(#cleanGlow)" stroke-width="10" stroke-linecap="round" />
+
+  <!-- Right Side: AI Machine Matrix / Dissolving Glitch Bits (Electric Cyan/Indigo) -->
+  <path d="M256 200 A 45 45 0 0 1 292 245" fill="none" stroke="url(#shieldGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="16 12" />
+  <path d="M256 165 A 80 80 0 0 1 328 260" fill="none" stroke="url(#shieldGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="24 16" />
+  <path d="M256 130 A 115 115 0 0 1 364 270" fill="none" stroke="url(#shieldGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="32 20" />
+
+  <!-- Central Dynamic Slash / Neutralizer Beam (Slicing the Fingerprint) -->
+  <line x1="330" y1="140" x2="182" y2="360" stroke="#ffffff" stroke-width="14" stroke-linecap="round" filter="url(#glow)" />
+  <line x1="330" y1="140" x2="182" y2="360" stroke="#38bdf8" stroke-width="6" stroke-linecap="round" />
+
+  <!-- Sparkle of Purity -->
+  <path d="M345 140 L355 120 L365 140 L385 150 L365 160 L355 180 L345 160 L325 150 Z" fill="#38bdf8" />
+  <circle cx="170" cy="375" r="8" fill="#10b981" filter="url(#glow)" />
+</svg>

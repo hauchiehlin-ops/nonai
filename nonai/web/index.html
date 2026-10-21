@@ -2,9 +2,109 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>NonAI - AI 指紋與隱藏痕跡消除系統</title>
+
+  <!-- Primary Meta Tags -->
+  <title>NonAI - 消除 AI 數位指紋與隱藏痕跡 | 免費線上 DOCX RSID 仿生、PDF 元資料與文字浮水印淨化工具</title>
+  <meta name="title" content="NonAI - 消除 AI 數位指紋與隱藏痕跡 | 免費線上 DOCX RSID 仿生、PDF 元資料與文字浮水印淨化工具">
+  <meta name="description" content="NonAI 是開源、100% 離線運算的 AI 指紋消除引擎。一鍵剔除隱形 Unicode 零寬字元、清除 ChatGPT/Claude 網頁底色樣式殘留、逆向注入 Word RSID 歷程與偽裝編輯工時，還原人手真實寫作特徵。">
+  <meta name="keywords" content="AI指紋消除, 去除AI痕跡, Word RSID, DOCX修改歷史, 零寬度字元, ChatGPT浮水印, Claude指紋, SynthID消除, PDF元資料清洗, AI檢測繞過, 剪貼簿去樣式, 論文AI檢測">
+  <meta name="author" content="NonAI Team">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <link rel="canonical" href="https://nonai-indol.vercel.app/">
+
+  <!-- Theme Color for Mobile Browsers -->
+  <meta name="theme-color" content="#2563eb" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b0f19" media="(prefers-color-scheme: dark)">
+
+  <!-- Application Icons & Manifest -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+
+  <!-- Open Graph / Facebook / Discord -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://nonai-indol.vercel.app/">
+  <meta property="og:site_name" content="NonAI">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:title" content="NonAI - 專業級 AI 數位指紋與底層隱藏痕跡消除系統">
+  <meta property="og:description" content="深層逆向剔除隱形 Unicode 零寬字元、清除網頁 CSS 幽靈底色、仿生注入 Word RSID 歷史會話與偽裝編輯工時。100% 本地完全離線運算。">
+  <meta property="og:image" content="https://nonai-indol.vercel.app/og-image.svg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="NonAI - AI 指紋與隱藏痕跡消除系統預覽">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://nonai-indol.vercel.app/">
+  <meta name="twitter:title" content="NonAI - 消除 AI 數位指紋與隱藏痕跡">
+  <meta name="twitter:description" content="一鍵剔除隱形 Unicode 零寬字元、清除網頁複製底色、注入 Word RSID 歷程與偽裝編輯工時。">
+  <meta name="twitter:image" content="https://nonai-indol.vercel.app/og-image.svg">
+
+  <!-- Structured Data: Schema.org (SoftwareApplication + FAQPage) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "@id": "https://nonai-indol.vercel.app/#webapp",
+        "name": "NonAI",
+        "alternateName": "NonAI - AI Fingerprint & Metadata Cleaner",
+        "url": "https://nonai-indol.vercel.app/",
+        "description": "專業級 AI 數位指紋消除工具，提供 DOCX RSID 仿生注入、PDF XMP 元資料偽裝、零寬度 Unicode 淨化與系統剪貼簿即時守護。",
+        "applicationCategory": "UtilityApplication",
+        "operatingSystem": "All",
+        "inLanguage": "zh-TW",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "featureList": [
+          "DOCX 仿生 RSID 會話注入與 Runs 碎形化切分",
+          "清除 ChatGPT/Claude 網頁複製底色與字體宣告",
+          "隱形 Unicode 與零寬度字元過濾",
+          "PDF 軟體元資料與 XMP 流偽裝",
+          "系統剪貼簿即時守護程式 (Scheme C)",
+          "100% 本機瀏覽器離線安全處理"
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://nonai-indol.vercel.app/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "什麼是 AI 數位指紋與元資料痕跡？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "AI 生成內容除了語句特徵外，在檔案結構與底層字串中常隱藏不可見標記，包含：隱形 Unicode 零寬字元、複製貼上夾帶的網頁 HEX 底色、DOCX 缺乏人類打字存檔的 RSID 編輯軌跡，以及 PDF/Word 標頭中的開源函式庫元資料。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "NonAI 如何解決 Word (DOCX) 缺乏 RSID 的破綻？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "NonAI 獨創 RSID 仿生注入演算法，逆向在 settings.xml 生成 20~40 組隨機會話池，並將長段落碎形化切分成打字暫停與思考節奏的 Runs，同步在 app.xml 寫入合理的工時分鐘數，使文件具備真實人類修改歷程特徵。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "我的檔案與資料是否會被上傳或洩漏？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "不會。NonAI 的清洗工作與檔案下載全部在本地環境或瀏覽器記憶體中完成，不儲存任何使用者文件或隱私記錄。"
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,17 +112,40 @@
     <!-- Header -->
     <header class="app-header">
       <div class="brand">
-        <span class="brand-icon">🛡️</span>
+        <div class="brand-icon-wrap" aria-hidden="true">
+          <svg class="brand-logo" viewBox="0 0 512 512" width="48" height="48">
+            <defs>
+              <linearGradient id="hdrShieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#6366f1" />
+                <stop offset="50%" stop-color="#3b82f6" />
+                <stop offset="100%" stop-color="#06b6d4" />
+              </linearGradient>
+              <linearGradient id="hdrCleanGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#10b981" />
+                <stop offset="100%" stop-color="#059669" />
+              </linearGradient>
+            </defs>
+            <rect width="512" height="512" rx="120" fill="#0f172a" />
+            <path d="M256 68 L400 120 C400 270 340 376 256 432 C172 376 112 270 112 120 Z" 
+                  fill="none" stroke="url(#hdrShieldGrad)" stroke-width="16" stroke-linejoin="round" />
+            <path d="M220 220 A 40 40 0 0 0 220 280" fill="none" stroke="url(#hdrCleanGlow)" stroke-width="14" stroke-linecap="round" />
+            <path d="M200 190 A 75 75 0 0 0 200 310" fill="none" stroke="url(#hdrCleanGlow)" stroke-width="14" stroke-linecap="round" />
+            <path d="M256 200 A 45 45 0 0 1 292 245" fill="none" stroke="url(#hdrShieldGrad)" stroke-width="14" stroke-linecap="round" stroke-dasharray="18 12" />
+            <path d="M256 165 A 80 80 0 0 1 328 260" fill="none" stroke="url(#hdrShieldGrad)" stroke-width="14" stroke-linecap="round" stroke-dasharray="24 16" />
+            <line x1="330" y1="140" x2="182" y2="360" stroke="#38bdf8" stroke-width="16" stroke-linecap="round" />
+            <line x1="330" y1="140" x2="182" y2="360" stroke="#ffffff" stroke-width="6" stroke-linecap="round" />
+          </svg>
+        </div>
         <div>
           <h1>NonAI</h1>
-          <p class="subtitle">AI 指紋、浮水印與底層元資料消除引擎</p>
+          <p class="subtitle">AI 數位指紋、浮水印與底層元資料消除引擎</p>
         </div>
       </div>
 
       <!-- Quick Clipboard Watcher Controller (Scheme C) -->
       <div class="header-actions">
         <div class="watcher-widget" id="watcherWidget">
-          <div class="watcher-status-indicator" id="watcherIndicator"></div>
+          <div class="watcher-status-indicator" id="watcherIndicator" aria-hidden="true"></div>
           <div class="watcher-text">
             <span class="label">剪貼簿守護 (Scheme C)</span>
             <span class="status" id="watcherStatusText">未啟動</span>
@@ -33,22 +156,22 @@
     </header>
 
     <!-- Navigation Tabs -->
-    <nav class="nav-tabs" role="tablist">
-      <button class="tab-btn active" role="tab" data-tab="tab-files">📁 檔案淨化工作台 (.docx, .pdf, .md, .txt)</button>
-      <button class="tab-btn" role="tab" data-tab="tab-text">✍️ 即時文字與 Hex 鑑識</button>
-      <button class="tab-btn" role="tab" data-tab="tab-clipboard">📋 剪貼簿活動日誌 (<span id="eventCountBadge">0</span>)</button>
+    <nav class="nav-tabs" role="tablist" aria-label="工作模式選擇">
+      <button class="tab-btn active" role="tab" aria-selected="true" data-tab="tab-files">📁 檔案淨化工作台 (.docx, .pdf, .md, .txt)</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="tab-text">✍️ 即時文字與 Hex 鑑識</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="tab-clipboard">📋 剪貼簿活動日誌 (<span id="eventCountBadge">0</span>)</button>
     </nav>
 
     <!-- Main Content Area -->
     <main class="app-main">
       <!-- TAB 1: 檔案處理 -->
-      <section class="tab-panel active" id="tab-files">
+      <section class="tab-panel active" id="tab-files" role="tabpanel">
         <div class="card file-upload-card">
-          <div class="drop-zone" id="dropZone">
+          <div class="drop-zone" id="dropZone" tabindex="0" role="button" aria-label="上傳欲清洗的檔案">
             <input type="file" id="fileInput" accept=".docx,.pdf,.md,.markdown,.txt" hidden>
             <div class="drop-zone-content">
-              <span class="upload-icon">📤</span>
-              <h3>拖曳檔案至此，或點擊選擇檔案</h3>
+              <span class="upload-icon" aria-hidden="true">📤</span>
+              <h2>拖曳檔案至此，或點擊選擇檔案</h2>
               <p>支援格式：<strong>Word (.docx)</strong>、<strong>PDF (.pdf)</strong>、<strong>Markdown (.md)</strong>、<strong>純文字 (.txt)</strong></p>
               <div class="supported-tags">
                 <span class="tag">DOCX RSID 仿生注入</span>
@@ -92,7 +215,7 @@
         </div>
 
         <!-- File Result Box -->
-        <div class="card result-card hidden" id="fileResultCard">
+        <div class="card result-card hidden" id="fileResultCard" aria-live="polite">
           <div class="result-header">
             <div>
               <h3 id="resFileName">已完成淨化：filename.docx</h3>
@@ -108,7 +231,7 @@
       </section>
 
       <!-- TAB 2: 即時文字與鑑識 -->
-      <section class="tab-panel" id="tab-text">
+      <section class="tab-panel" id="tab-text" role="tabpanel">
         <div class="text-workspace">
           <div class="text-panel">
             <div class="panel-header">
@@ -118,7 +241,7 @@
                 <button type="button" class="btn btn-sm btn-ghost" id="btnClearText">清空</button>
               </div>
             </div>
-            <textarea id="rawTextInput" placeholder="請在此貼上來自 ChatGPT、Claude 等 AI 工具生成的文字，系統將自動解析隱形零寬字元與底層標記..."></textarea>
+            <textarea id="rawTextInput" placeholder="請在此貼上來自 ChatGPT、Claude 等 AI 工具生成的文字，系統將自動解析隱形零寬字元與底層標記..." aria-label="原始文字輸入區"></textarea>
             <div class="panel-footer">
               <span id="rawCharCount">字數：0</span>
               <span class="badge badge-warning hidden" id="rawAnomalyAlert">發現異常字元！</span>
@@ -132,7 +255,7 @@
                 <button type="button" class="btn btn-sm btn-primary" id="btnCopyCleanText">📋 複製乾淨文字</button>
               </div>
             </div>
-            <textarea id="cleanedTextOutput" readonly placeholder="淨化後文字將顯示於此..."></textarea>
+            <textarea id="cleanedTextOutput" readonly placeholder="淨化後文字將顯示於此..." aria-label="淨化後文字結果區"></textarea>
             <div class="panel-footer">
               <span id="cleanCharCount">字數：0</span>
               <span class="badge badge-success" id="cleanStatusBadge">純淨無指紋</span>
@@ -168,7 +291,7 @@
       </section>
 
       <!-- TAB 3: 剪貼簿守護日誌 (Scheme C) -->
-      <section class="tab-panel" id="tab-clipboard">
+      <section class="tab-panel" id="tab-clipboard" role="tabpanel">
         <div class="card clipboard-dashboard-card">
           <div class="dash-header">
             <div>
@@ -177,8 +300,8 @@
             </div>
             <div class="dash-controls">
               <label class="switch-control">
-                <input type="checkbox" id="chkEnableWatcher">
-                <span class="slider"></span>
+                <input type="checkbox" id="chkEnableWatcher" aria-label="切換剪貼簿守護狀態">
+                <span class="slider" aria-hidden="true"></span>
               </label>
               <span id="watcherSwitchLabel">守護未運行</span>
             </div>
@@ -189,16 +312,44 @@
               <h4>即時攔截日誌 (Recent Intercepts)</h4>
               <button type="button" class="btn btn-sm btn-ghost" id="btnRefreshClipEvents">🔄 重新整理</button>
             </div>
-            <div class="event-log-list" id="eventLogList">
+            <div class="event-log-list" id="eventLogList" tabindex="0" role="region" aria-label="剪貼簿攔截活動清單">
               <div class="empty-state">尚無剪貼簿攔截事件。啟動守護後，複製任何文字即可查看即時淨化過程。</div>
             </div>
           </div>
         </div>
       </section>
+
+      <!-- Educational FAQ & Knowledge Section for Enhanced SEO -->
+      <section class="card faq-section">
+        <h3>💡 關於 AI 指紋與 NonAI 核心技術問答</h3>
+        <div class="faq-grid">
+          <div class="faq-item">
+            <h4>什麼是 Word 檔中的 RSID 破綻？</h4>
+            <p>正常人類撰寫 Word 時，每次鍵盤輸入停頓、回溯修改與存檔，都會在 <code>document.xml</code> 中留下數十組不同的修訂儲存識別碼（RSID）。AI 系統直接封裝的 DOCX 通常只有 1 組全域 RSID 或完全沒有，一眼就會被鑑識程式辨識。NonAI 會仿生注入 20~40 組會話並碎形化拆分段落。</p>
+          </div>
+          <div class="faq-item">
+            <h4>為什麼複製文字會留下「幽靈底色」？</h4>
+            <p>從網頁對話框反白文字時，剪貼簿會夾帶 <code>&lt;span style="background-color: #f7f7f8"&gt;</code> 等 HEX 底色與 Inter 特徵字體。若直接貼入文件，這些樣式會永久存留在底層 XML。NonAI 剪貼簿守護可在複製瞬間自動脫水淨化。</p>
+          </div>
+          <div class="faq-item">
+            <h4>如何對抗統計型浮水印 (如 SynthID)？</h4>
+            <p>統計型浮水印利用偽隨機綠色詞庫（Green List）偏好選詞。NonAI 透過打斷 10%~15% 的 n-gram 鏈結、替換「值得注意的是」等高頻套話，能使檢測演算法的 z-score 機率顯著性崩潰，保護創作者文意不受干擾。</p>
+          </div>
+          <div class="faq-item">
+            <h4>NonAI 是否保證完全隱私與離線？</h4>
+            <p>是的。NonAI 採用完全本地離線架構，檔案清洗運算與二進位生成全在您的本機電腦或瀏覽器內部完成，絕不上傳雲端伺服器儲存。</p>
+          </div>
+        </div>
+      </section>
     </main>
 
+    <!-- Footer -->
     <footer class="app-footer">
       <p>NonAI 2.0 • 100% 本地完全離線運算 • 保護您的創作隱私與文字指紋安全</p>
+      <p class="footer-links">
+        <a href="https://github.com/hauchiehlin-ops/nonai" target="_blank" rel="noopener noreferrer">GitHub 開源倉庫</a> •
+        <a href="/sitemap.xml" target="_blank">網站地圖</a>
+      </p>
     </footer>
   </div>
 
@@ -207,10 +358,10 @@
     <div class="dialog-content">
       <div class="dialog-header">
         <div class="dialog-title-wrap">
-          <span class="dialog-icon" id="modalIcon">🔍</span>
+          <span class="dialog-icon" id="modalIcon" aria-hidden="true">🔍</span>
           <h3 id="modalTitle">執行詳情與底層鑑識</h3>
         </div>
-        <button type="button" class="btn-close" id="btnCloseModal" aria-label="關閉">✕</button>
+        <button type="button" class="btn-close" id="btnCloseModal" aria-label="關閉視窗">✕</button>
       </div>
       <div class="dialog-body" id="modalBody">
         <!-- Content injected dynamically by app.js -->
