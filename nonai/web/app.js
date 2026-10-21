@@ -192,13 +192,13 @@ document.addEventListener("DOMContentLoaded", () => {
           <pre style="margin: 0; background: #0b0f19; padding: 10px 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; color: #10b981; overflow-x: auto; user-select: all;"><code>cd /Volumes/Mobil/GitMobil/NonAI && python3 run_web.py</code></pre>
         </div>
 
-        <!-- Command 2: Full clone from scratch -->
+        <!-- Command 2: Full clone from scratch into user's Downloads/NonAI -->
         <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">${isZh ? "🚀 方式二：首次使用完整指令（包含 Git 下載與進入資料夾）" : "🚀 Option 2: Full first-time setup (Git clone & run)"}</span>
-            <button type="button" class="btn btn-sm btn-primary copy-cmd-btn" data-copy="git clone https://github.com/hauchiehlin-ops/nonai.git /Volumes/Mobil/GitMobil/NonAI && cd /Volumes/Mobil/GitMobil/NonAI && python3 run_web.py" style="padding: 4px 12px; font-size: 0.82rem;">📋 複製完整指令</button>
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">${isZh ? "🚀 方式二：首次使用完整指令（自動下載至本機「下載」資料夾 NonAI 並啟動）" : "🚀 Option 2: First-time setup (Download to ~/Downloads/NonAI and run)"}</span>
+            <button type="button" class="btn btn-sm btn-primary copy-cmd-btn" data-copy="git clone https://github.com/hauchiehlin-ops/nonai.git ~/Downloads/NonAI && cd ~/Downloads/NonAI && python3 run_web.py" style="padding: 4px 12px; font-size: 0.82rem;">📋 複製完整指令</button>
           </div>
-          <pre style="margin: 0; background: #0b0f19; padding: 10px 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; color: #38bdf8; overflow-x: auto; user-select: all;"><code>git clone https://github.com/hauchiehlin-ops/nonai.git /Volumes/Mobil/GitMobil/NonAI && cd /Volumes/Mobil/GitMobil/NonAI && python3 run_web.py</code></pre>
+          <pre style="margin: 0; background: #0b0f19; padding: 10px 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; color: #38bdf8; overflow-x: auto; user-select: all;"><code>git clone https://github.com/hauchiehlin-ops/nonai.git ~/Downloads/NonAI && cd ~/Downloads/NonAI && python3 run_web.py</code></pre>
         </div>
       </div>
     `;
