@@ -187,18 +187,18 @@ document.addEventListener("DOMContentLoaded", () => {
         <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">${isZh ? "💻 方式一：若已有專案目錄（進入資料夾啟動）" : "💻 Option 1: If already cloned (cd and run)"}</span>
-            <button type="button" class="btn btn-sm btn-primary copy-cmd-btn" data-copy="cd nonai && python3 run_web.py" style="padding: 4px 12px; font-size: 0.82rem;">📋 複製指令</button>
+            <button type="button" class="btn btn-sm btn-primary copy-cmd-btn" data-copy="cd /Volumes/Mobil/GitMobil/NonAI && python3 run_web.py" style="padding: 4px 12px; font-size: 0.82rem;">📋 複製指令</button>
           </div>
-          <pre style="margin: 0; background: #0b0f19; padding: 10px 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; color: #10b981; overflow-x: auto; user-select: all;"><code>cd nonai && python3 run_web.py</code></pre>
+          <pre style="margin: 0; background: #0b0f19; padding: 10px 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; color: #10b981; overflow-x: auto; user-select: all;"><code>cd /Volumes/Mobil/GitMobil/NonAI && python3 run_web.py</code></pre>
         </div>
 
         <!-- Command 2: Full clone from scratch -->
         <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">${isZh ? "🚀 方式二：首次使用完整指令（包含 Git 下載與進入資料夾）" : "🚀 Option 2: Full first-time setup (Git clone & run)"}</span>
-            <button type="button" class="btn btn-sm btn-primary copy-cmd-btn" data-copy="git clone https://github.com/hauchiehlin-ops/nonai.git && cd nonai && python3 run_web.py" style="padding: 4px 12px; font-size: 0.82rem;">📋 複製完整指令</button>
+            <button type="button" class="btn btn-sm btn-primary copy-cmd-btn" data-copy="git clone https://github.com/hauchiehlin-ops/nonai.git /Volumes/Mobil/GitMobil/NonAI && cd /Volumes/Mobil/GitMobil/NonAI && python3 run_web.py" style="padding: 4px 12px; font-size: 0.82rem;">📋 複製完整指令</button>
           </div>
-          <pre style="margin: 0; background: #0b0f19; padding: 10px 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; color: #38bdf8; overflow-x: auto; user-select: all;"><code>git clone https://github.com/hauchiehlin-ops/nonai.git && cd nonai && python3 run_web.py</code></pre>
+          <pre style="margin: 0; background: #0b0f19; padding: 10px 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; color: #38bdf8; overflow-x: auto; user-select: all;"><code>git clone https://github.com/hauchiehlin-ops/nonai.git /Volumes/Mobil/GitMobil/NonAI && cd /Volumes/Mobil/GitMobil/NonAI && python3 run_web.py</code></pre>
         </div>
       </div>
     `;
