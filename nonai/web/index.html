@@ -202,6 +202,25 @@
     </footer>
   </div>
 
+  <!-- Detail Modal for Inspection of Execution Status -->
+  <dialog id="detailModal" closedby="any" aria-labelledby="modalTitle" class="detail-dialog">
+    <div class="dialog-content">
+      <div class="dialog-header">
+        <div class="dialog-title-wrap">
+          <span class="dialog-icon" id="modalIcon">🔍</span>
+          <h3 id="modalTitle">執行詳情與底層鑑識</h3>
+        </div>
+        <button type="button" class="btn-close" id="btnCloseModal" aria-label="關閉">✕</button>
+      </div>
+      <div class="dialog-body" id="modalBody">
+        <!-- Content injected dynamically by app.js -->
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-primary" id="btnModalOk">確定關閉</button>
+      </div>
+    </div>
+  </dialog>
+
   <script src="app.js"></script>
 </body>
 </html>

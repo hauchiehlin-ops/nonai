@@ -44,6 +44,10 @@ class DocxSanitizeResult:
     original_rsid_count: int
     final_rsid_count: int
     estimated_human_minutes: int
+    rsid_pool: List[str] = field(default_factory=list)
+    ghost_style_items: List[str] = field(default_factory=list)
+    split_samples: List[Dict[str, str]] = field(default_factory=list)
+    metadata_spoof_details: Dict[str, Any] = field(default_factory=dict)
 
 
 def _generate_rsid_pool(count: int = 30) -> List[str]:
@@ -68,12 +72,13 @@ def _clean_text_nodes(root: etree._Element) -> int:
     return total_cleaned
 
 
-def _strip_ghost_shading_and_fonts(root: etree._Element) -> int:
+def _strip_ghost_shading_and_fonts(root: etree._Element) -> Tuple[int, List[str]]:
     """
     Remove inline shading (<w:shd>) caused by copying from ChatGPT/Claude
     and clean suspicious web fonts.
     """
     removed_count = 0
+    items = []
     # 1. Remove background shading in runs and paragraphs
     for shd in list(root.iter(f"{{{W_NS}}}shd")):
         fill = shd.get(f"{{{W_NS}}}fill", "").upper()
@@ -83,6 +88,7 @@ def _strip_ghost_shading_and_fonts(root: etree._Element) -> int:
             if parent is not None:
                 parent.remove(shd)
                 removed_count += 1
+                items.append(f"<w:shd w:fill=\"{fill}\"/> (對話框背景 HEX 色碼)")
 
     # 2. Neutralize AI web fonts (Inter, Söhne, etc.)
     ai_fonts = {"INTER", "SÖHNE", "SOEHNE", "SYSTEM-UI", "ROBOTO", "SEGOE UI"}
@@ -92,21 +98,23 @@ def _strip_ghost_shading_and_fonts(root: etree._Element) -> int:
             if val and val.upper() in ai_fonts:
                 rFonts.attrib.pop(attr, None)
                 removed_count += 1
-    return removed_count
+                items.append(f"<w:rFonts {attr}=\"{val}\"/> (AI 網頁預設字體)")
+    return removed_count, items
 
 
 def _fragment_and_inject_rsids(
     doc_root: etree._Element,
     rsid_pool: List[str]
-) -> Tuple[int, int, int]:
+) -> Tuple[int, int, int, List[Dict[str, str]]]:
     """
     Fragments robotic long runs into natural chunks and injects RSID tags.
-    Returns (paragraphs_modified, runs_split, total_rsids_assigned).
+    Returns (paragraphs_modified, runs_split, total_rsids_assigned, split_samples).
     """
     root_rsid = rsid_pool[0]
     p_count = 0
     runs_split_count = 0
     rsids_assigned = 0
+    samples: List[Dict[str, str]] = []
 
     # Punctuation marks used for natural typing pauses
     pause_punctuation = re.compile(r'([，。、；：！？,\.\?!;:])')
@@ -132,6 +140,7 @@ def _fragment_and_inject_rsids(
             # Fragment long text runs if they contain natural pause points
             t_elem = r.find(f"{{{W_NS}}}t")
             if t_elem is not None and t_elem.text and len(t_elem.text) > 35:
+                original_sample_text = t_elem.text
                 # Check for punctuation to split
                 parts = pause_punctuation.split(t_elem.text)
                 if len(parts) > 2:
@@ -152,11 +161,13 @@ def _fragment_and_inject_rsids(
                     if len(chunks) > 1:
                         # Keep first chunk in current run
                         t_elem.text = chunks[0]
+                        created_sub_rsids = [r_rsid]
                         # Create subsequent runs
                         r_idx = p.index(r)
                         for i, chunk in enumerate(chunks[1:], start=1):
                             new_r = etree.Element(f"{{{W_NS}}}r")
                             new_r_rsid = random.choice(rsid_pool)
+                            created_sub_rsids.append(new_r_rsid)
                             new_r.set(f"{{{W_NS}}}rsidR", new_r_rsid)
                             # Copy formatting if present
                             rPr = r.find(f"{{{W_NS}}}rPr")
@@ -170,7 +181,13 @@ def _fragment_and_inject_rsids(
                             runs_split_count += 1
                             rsids_assigned += 1
 
-    return p_count, runs_split_count, rsids_assigned
+                        if len(samples) < 5:
+                            samples.append({
+                                "original": original_sample_text[:60] + "...",
+                                "chunks": " │ ".join([f"[{rsid}] {c}" for rsid, c in zip(created_sub_rsids, chunks)])
+                            })
+
+    return p_count, runs_split_count, rsids_assigned, samples
 
 
 def _update_settings_xml(settings_xml_content: bytes, rsid_pool: List[str]) -> bytes:
@@ -309,9 +326,11 @@ def sanitize_docx(
     # Process word/document.xml
     unicode_removed = 0
     ghost_styles_removed = 0
+    ghost_style_items = []
     p_modified = 0
     runs_split = 0
     total_rsids_injected = 0
+    split_samples = []
     total_words = 100
 
     rsid_pool = _generate_rsid_pool(rsid_session_count)
@@ -321,9 +340,9 @@ def sanitize_docx(
         # 1. Clean unicode
         unicode_removed = _clean_text_nodes(doc_root)
         # 2. Strip shading & ghost styles
-        ghost_styles_removed = _strip_ghost_shading_and_fonts(doc_root)
+        ghost_styles_removed, ghost_style_items = _strip_ghost_shading_and_fonts(doc_root)
         # 3. Fragment and inject RSIDs
-        p_modified, runs_split, total_rsids_injected = _fragment_and_inject_rsids(doc_root, rsid_pool)
+        p_modified, runs_split, total_rsids_injected, split_samples = _fragment_and_inject_rsids(doc_root, rsid_pool)
         
         # Approximate word count
         all_text = "".join(doc_root.itertext())
@@ -360,6 +379,19 @@ def sanitize_docx(
     out_zip.close()
     in_zip.close()
 
+    now = datetime.now(timezone.utc)
+    created_time = now - timedelta(minutes=calc_minutes + 30)
+
+    metadata_spoof_details = {
+        "application": "Microsoft Office Word",
+        "app_version": "16.0000",
+        "total_time_minutes": calc_minutes,
+        "revision": revision_count,
+        "author": author_name,
+        "created_time": created_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "modified_time": now.strftime("%Y-%m-%d %H:%M:%S UTC")
+    }
+
     return DocxSanitizeResult(
         cleaned_bytes=out_buffer.getvalue(),
         total_rsids_injected=total_rsids_injected,
@@ -370,5 +402,9 @@ def sanitize_docx(
         unicode_chars_removed=unicode_removed,
         original_rsid_count=len(original_rsids),
         final_rsid_count=len(rsid_pool),
-        estimated_human_minutes=calc_minutes
+        estimated_human_minutes=calc_minutes,
+        rsid_pool=rsid_pool,
+        ghost_style_items=ghost_style_items,
+        split_samples=split_samples,
+        metadata_spoof_details=metadata_spoof_details
     )

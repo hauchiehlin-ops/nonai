@@ -3,10 +3,12 @@ NonAI Web API Server
 FastAPI backend providing file processing, text sanitization, and clipboard watcher control.
 """
 
+import base64
 import io
 import os
 import uuid
 import tempfile
+from urllib.parse import quote
 from typing import Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse, HTMLResponse, JSONResponse
@@ -118,15 +120,20 @@ async def api_clean_file(
             author_name=author,
             rsid_session_count=rsid_count
         )
+        mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        file_b64 = base64.b64encode(docx_res.cleaned_bytes).decode("ascii")
+
         DOWNLOAD_CACHE[file_id] = {
             "bytes": docx_res.cleaned_bytes,
             "filename": cleaned_filename,
-            "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            "mime": mime
         }
         return {
             "file_id": file_id,
             "filename": cleaned_filename,
             "file_type": "docx",
+            "file_b64": file_b64,
+            "mime": mime,
             "stats": {
                 "rsid_injected": docx_res.final_rsid_count,
                 "original_rsids": docx_res.original_rsid_count,
@@ -135,6 +142,16 @@ async def api_clean_file(
                 "unicode_removed": docx_res.unicode_chars_removed,
                 "human_editing_minutes": docx_res.estimated_human_minutes,
                 "application_spoofed": "Microsoft Office Word 16.0000"
+            },
+            "details": {
+                "rsid_pool": docx_res.rsid_pool,
+                "ghost_style_items": docx_res.ghost_style_items,
+                "split_samples": docx_res.split_samples,
+                "metadata_spoof_details": docx_res.metadata_spoof_details,
+                "paragraphs_modified": docx_res.paragraphs_modified,
+                "runs_split": docx_res.runs_split,
+                "estimated_human_minutes": docx_res.estimated_human_minutes,
+                "unicode_removed": docx_res.unicode_chars_removed
             }
         }
 
@@ -144,15 +161,20 @@ async def api_clean_file(
             author_name=author,
             spoof_target=pdf_spoof
         )
+        mime = "application/pdf"
+        file_b64 = base64.b64encode(pdf_res.cleaned_bytes).decode("ascii")
+
         DOWNLOAD_CACHE[file_id] = {
             "bytes": pdf_res.cleaned_bytes,
             "filename": cleaned_filename,
-            "mime": "application/pdf"
+            "mime": mime
         }
         return {
             "file_id": file_id,
             "filename": cleaned_filename,
             "file_type": "pdf",
+            "file_b64": file_b64,
+            "mime": mime,
             "stats": {
                 "original_producer": pdf_res.original_producer,
                 "original_creator": pdf_res.original_creator,
@@ -160,6 +182,15 @@ async def api_clean_file(
                 "spoofed_creator": pdf_res.spoofed_creator,
                 "xmp_cleaned": pdf_res.xmp_cleaned,
                 "pages": pdf_res.total_pages
+            },
+            "details": {
+                "original_producer": pdf_res.original_producer,
+                "original_creator": pdf_res.original_creator,
+                "spoofed_producer": pdf_res.spoofed_producer,
+                "spoofed_creator": pdf_res.spoofed_creator,
+                "xmp_cleaned": pdf_res.xmp_cleaned,
+                "pages": pdf_res.total_pages,
+                "original_metadata": pdf_res.original_metadata
             }
         }
 
@@ -170,16 +201,27 @@ async def api_clean_file(
         if enable_perturb:
             final_text = perturb_text(final_text, intensity=0.4).perturbed_text
 
+        cleaned_bytes = final_text.encode("utf-8")
+        mime = "text/markdown"
+        file_b64 = base64.b64encode(cleaned_bytes).decode("ascii")
+
         DOWNLOAD_CACHE[file_id] = {
-            "bytes": final_text.encode("utf-8"),
+            "bytes": cleaned_bytes,
             "filename": cleaned_filename,
-            "mime": "text/markdown"
+            "mime": mime
         }
         return {
             "file_id": file_id,
             "filename": cleaned_filename,
             "file_type": "markdown",
+            "file_b64": file_b64,
+            "mime": mime,
             "stats": {
+                "unicode_removed": md_res.unicode_chars_removed,
+                "tables_de_perfectionized": md_res.tables_de_perfectionized,
+                "lists_varied": md_res.lists_varied,
+            },
+            "details": {
                 "unicode_removed": md_res.unicode_chars_removed,
                 "tables_de_perfectionized": md_res.tables_de_perfectionized,
                 "lists_varied": md_res.lists_varied,
@@ -194,16 +236,26 @@ async def api_clean_file(
         if enable_perturb:
             final_text = perturb_text(final_text, intensity=0.4).perturbed_text
 
+        cleaned_bytes = final_text.encode("utf-8")
+        mime = "text/plain"
+        file_b64 = base64.b64encode(cleaned_bytes).decode("ascii")
+
         DOWNLOAD_CACHE[file_id] = {
-            "bytes": final_text.encode("utf-8"),
+            "bytes": cleaned_bytes,
             "filename": cleaned_filename,
-            "mime": "text/plain"
+            "mime": mime
         }
         return {
             "file_id": file_id,
             "filename": cleaned_filename,
             "file_type": "txt",
+            "file_b64": file_b64,
+            "mime": mime,
             "stats": {
+                "unicode_removed": u_res.total_removed,
+                "spaces_normalized": u_res.normalized_spaces,
+            },
+            "details": {
                 "unicode_removed": u_res.total_removed,
                 "spaces_normalized": u_res.normalized_spaces,
             }
@@ -214,10 +266,14 @@ async def api_download(file_id: str):
     if file_id not in DOWNLOAD_CACHE:
         raise HTTPException(status_code=404, detail="檔案已過期或不存在")
     item = DOWNLOAD_CACHE[file_id]
+    encoded_fn = quote(item["filename"])
     return StreamingResponse(
         io.BytesIO(item["bytes"]),
         media_type=item["mime"],
-        headers={"Content-Disposition": f'attachment; filename="{item["filename"]}"'}
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_fn}",
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
     )
 
 @app.get("/api/clipboard/status")
@@ -251,5 +307,8 @@ async def api_clipboard_toggle(req: ToggleWatcherRequest):
 
 # Mount static frontend
 web_dir = os.path.join(os.path.dirname(__file__), "web")
-if os.path.exists(web_dir):
-    app.mount("/", StaticFiles(directory=web_dir, html=True), name="web")
+public_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "public")
+target_dir = public_dir if os.path.exists(public_dir) else web_dir
+
+if os.path.exists(target_dir):
+    app.mount("/", StaticFiles(directory=target_dir, html=True), name="web")
