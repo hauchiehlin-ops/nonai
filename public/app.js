@@ -86,6 +86,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Update watcher button and status based on state
     updateWatcherUI(isWatcherActive);
+
+    // Update Environment indicator (Localhost vs Cloud)
+    updateEnvBadge();
   }
 
   if (langSelect) {
@@ -163,6 +166,32 @@ document.addEventListener("DOMContentLoaded", () => {
     return new Blob(byteArrays, { type: contentType });
   }
 
+  // Environment Detection: Localhost vs Cloud Serverless
+  const isLocalhost = window.location.hostname === "localhost" ||
+                      window.location.hostname === "127.0.0.1" ||
+                      window.location.hostname === "0.0.0.0" ||
+                      window.location.hostname.endsWith(".local") ||
+                      window.location.protocol === "file:";
+
+  function updateEnvBadge() {
+    const badge = document.getElementById("envModeBadge");
+    if (!badge) return;
+    const isZh = currentLang.startsWith("zh");
+    if (isLocalhost) {
+      badge.style.display = "inline-flex";
+      badge.style.background = "rgba(16, 185, 129, 0.15)";
+      badge.style.color = "#10b981";
+      badge.style.border = "1px solid rgba(16, 185, 129, 0.4)";
+      badge.textContent = isZh ? "🖥️ 本機模式 (無檔案大小上限)" : "🖥️ Local Mode (No Size Limit)";
+    } else {
+      badge.style.display = "inline-flex";
+      badge.style.background = "rgba(56, 189, 248, 0.15)";
+      badge.style.color = "#38bdf8";
+      badge.style.border = "1px solid rgba(56, 189, 248, 0.4)";
+      badge.textContent = isZh ? "☁️ 雲端體驗版 (限 4.5MB)" : "☁️ Cloud Demo (4.5MB Limit)";
+    }
+  }
+
   // Payload Size Limit Modal (Allows 1-Click Copy of Local Execution Commands)
   function showPayloadLimitModal(fileSizeMB) {
     const isZh = currentLang.startsWith("zh");
@@ -236,14 +265,17 @@ document.addEventListener("DOMContentLoaded", () => {
   async function handleFileUpload(file) {
     const t = I18N_TRANSLATIONS[currentLang];
 
-    // Client-side payload limit check (Vercel Serverless Function limit is 4.5MB)
-    const MAX_FILE_SIZE = 4.2 * 1024 * 1024; // 4.2MB safe threshold
-    if (file.size > MAX_FILE_SIZE) {
-      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      showPayloadLimitModal(fileSizeMB);
-      dropZone.querySelector("h2").textContent = t.drop_title;
-      fileInput.value = "";
-      return;
+    // Client-side payload limit check ONLY for cloud serverless environments (e.g. Vercel 4.5MB limit)
+    // When running locally on 127.0.0.1 or localhost, files of any size (up to 500MB) can be processed completely offline!
+    if (!isLocalhost) {
+      const VERCEL_MAX_FILE_SIZE = 4.2 * 1024 * 1024; // 4.2MB safe threshold for serverless
+      if (file.size > VERCEL_MAX_FILE_SIZE) {
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+        showPayloadLimitModal(fileSizeMB);
+        dropZone.querySelector("h2").textContent = t.drop_title;
+        fileInput.value = "";
+        return;
+      }
     }
 
     dropZone.querySelector("h2").textContent = `⏳ ${file.name}...`;
