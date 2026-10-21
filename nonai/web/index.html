@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>NonAI - AI 指紋與隱藏痕跡消除系統</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-icon">🛡️</span>
+        <div>
+          <h1>NonAI</h1>
+          <p class="subtitle">AI 指紋、浮水印與底層元資料消除引擎</p>
+        </div>
+      </div>
+
+      <!-- Quick Clipboard Watcher Controller (Scheme C) -->
+      <div class="header-actions">
+        <div class="watcher-widget" id="watcherWidget">
+          <div class="watcher-status-indicator" id="watcherIndicator"></div>
+          <div class="watcher-text">
+            <span class="label">剪貼簿守護 (Scheme C)</span>
+            <span class="status" id="watcherStatusText">未啟動</span>
+          </div>
+          <button type="button" class="btn btn-sm" id="btnToggleWatcher">啟動守護</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs" role="tablist">
+      <button class="tab-btn active" role="tab" data-tab="tab-files">📁 檔案淨化工作台 (.docx, .pdf, .md, .txt)</button>
+      <button class="tab-btn" role="tab" data-tab="tab-text">✍️ 即時文字與 Hex 鑑識</button>
+      <button class="tab-btn" role="tab" data-tab="tab-clipboard">📋 剪貼簿活動日誌 (<span id="eventCountBadge">0</span>)</button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+      <!-- TAB 1: 檔案處理 -->
+      <section class="tab-panel active" id="tab-files">
+        <div class="card file-upload-card">
+          <div class="drop-zone" id="dropZone">
+            <input type="file" id="fileInput" accept=".docx,.pdf,.md,.markdown,.txt" hidden>
+            <div class="drop-zone-content">
+              <span class="upload-icon">📤</span>
+              <h3>拖曳檔案至此，或點擊選擇檔案</h3>
+              <p>支援格式：<strong>Word (.docx)</strong>、<strong>PDF (.pdf)</strong>、<strong>Markdown (.md)</strong>、<strong>純文字 (.txt)</strong></p>
+              <div class="supported-tags">
+                <span class="tag">DOCX RSID 仿生注入</span>
+                <span class="tag">PDF XMP 元資料偽裝</span>
+                <span class="tag">網頁 CSS 幽靈底色清除</span>
+                <span class="tag">零寬度 Unicode 淨化</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Configuration options -->
+          <div class="config-section">
+            <details class="advanced-settings">
+              <summary>⚙️ 高級仿生參數設定 (DOCX / PDF / 統計擾動)</summary>
+              <div class="settings-grid">
+                <div class="form-group">
+                  <label for="cfgAuthor">偽裝文件作者 (Author)：</label>
+                  <input type="text" id="cfgAuthor" value="Author" placeholder="例如：Alex Wang">
+                </div>
+                <div class="form-group">
+                  <label for="cfgRsidCount">DOCX RSID 歷史會話注入數：</label>
+                  <input type="number" id="cfgRsidCount" value="25" min="5" max="60">
+                  <span class="hint">模擬 25 次存檔與打字 pause 歷程</span>
+                </div>
+                <div class="form-group">
+                  <label for="cfgPdfSpoof">PDF 生成器偽裝目標：</label>
+                  <select id="cfgPdfSpoof">
+                    <option value="macOS" selected>macOS Quartz PDFContext (Pages)</option>
+                    <option value="Word">Microsoft Word for Microsoft 365</option>
+                  </select>
+                </div>
+                <div class="form-group checkbox-group">
+                  <label>
+                    <input type="checkbox" id="cfgPerturb">
+                    <span>啟用統計浮水印擾動 (打斷 n-gram、近義詞微調)</span>
+                  </label>
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- File Result Box -->
+        <div class="card result-card hidden" id="fileResultCard">
+          <div class="result-header">
+            <div>
+              <h3 id="resFileName">已完成淨化：filename.docx</h3>
+              <p class="text-muted" id="resFileTypeDesc">檔案結構已完成人手特徵偽裝與元資料淨化</p>
+            </div>
+            <a href="#" class="btn btn-primary" id="btnDownload">💾 下載已淨化檔案</a>
+          </div>
+
+          <div class="stats-grid" id="fileStatsGrid">
+            <!-- Dynamic stats filled by app.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: 即時文字與鑑識 -->
+      <section class="tab-panel" id="tab-text">
+        <div class="text-workspace">
+          <div class="text-panel">
+            <div class="panel-header">
+              <h3>原始文字 / 貼上內容</h3>
+              <div class="panel-tools">
+                <button type="button" class="btn btn-sm btn-ghost" id="btnPasteFromClip">📋 貼上剪貼簿</button>
+                <button type="button" class="btn btn-sm btn-ghost" id="btnClearText">清空</button>
+              </div>
+            </div>
+            <textarea id="rawTextInput" placeholder="請在此貼上來自 ChatGPT、Claude 等 AI 工具生成的文字，系統將自動解析隱形零寬字元與底層標記..."></textarea>
+            <div class="panel-footer">
+              <span id="rawCharCount">字數：0</span>
+              <span class="badge badge-warning hidden" id="rawAnomalyAlert">發現異常字元！</span>
+            </div>
+          </div>
+
+          <div class="text-panel">
+            <div class="panel-header">
+              <h3>淨化與去指紋結果</h3>
+              <div class="panel-tools">
+                <button type="button" class="btn btn-sm btn-primary" id="btnCopyCleanText">📋 複製乾淨文字</button>
+              </div>
+            </div>
+            <textarea id="cleanedTextOutput" readonly placeholder="淨化後文字將顯示於此..."></textarea>
+            <div class="panel-footer">
+              <span id="cleanCharCount">字數：0</span>
+              <span class="badge badge-success" id="cleanStatusBadge">純淨無指紋</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Text Forensics Audit Details -->
+        <div class="card audit-card" id="textAuditCard">
+          <h3>🔬 文字底層鑑識報告</h3>
+          <div class="audit-summary-row">
+            <div class="audit-metric">
+              <span class="metric-label">AI 殘留綜合風險評分</span>
+              <span class="metric-value" id="auditRiskScore">0 / 100</span>
+            </div>
+            <div class="audit-metric">
+              <span class="metric-label">隱形字元 (Zero-Width)</span>
+              <span class="metric-value text-danger" id="auditZeroWidthCount">0 個</span>
+            </div>
+            <div class="audit-metric">
+              <span class="metric-label">不尋常空白正規化</span>
+              <span class="metric-value text-info" id="auditSpacesNorm">0 處</span>
+            </div>
+            <div class="audit-metric">
+              <span class="metric-label">n-gram 語意打散率</span>
+              <span class="metric-value text-success" id="auditDisruption">0%</span>
+            </div>
+          </div>
+          <div id="anomaliesListContainer">
+            <!-- Anomaly breakdown -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: 剪貼簿守護日誌 (Scheme C) -->
+      <section class="tab-panel" id="tab-clipboard">
+        <div class="card clipboard-dashboard-card">
+          <div class="dash-header">
+            <div>
+              <h3>🛡️ 系統剪貼簿即時守護器 (Scheme C)</h3>
+              <p class="text-muted">常駐於 macOS 背景，當您複製 ChatGPT、Claude 回應時，自動在記憶體中剔除零寬字元並抹平 HTML/CSS 幽靈標籤。</p>
+            </div>
+            <div class="dash-controls">
+              <label class="switch-control">
+                <input type="checkbox" id="chkEnableWatcher">
+                <span class="slider"></span>
+              </label>
+              <span id="watcherSwitchLabel">守護未運行</span>
+            </div>
+          </div>
+
+          <div class="event-stream-container">
+            <div class="stream-header">
+              <h4>即時攔截日誌 (Recent Intercepts)</h4>
+              <button type="button" class="btn btn-sm btn-ghost" id="btnRefreshClipEvents">🔄 重新整理</button>
+            </div>
+            <div class="event-log-list" id="eventLogList">
+              <div class="empty-state">尚無剪貼簿攔截事件。啟動守護後，複製任何文字即可查看即時淨化過程。</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>NonAI 2.0 • 100% 本地完全離線運算 • 保護您的創作隱私與文字指紋安全</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
