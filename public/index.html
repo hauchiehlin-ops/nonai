@@ -18,10 +18,10 @@
   <meta name="theme-color" content="#2563eb" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0b0f19" media="(prefers-color-scheme: dark)">
 
-  <!-- Application Icons & Manifest -->
+  <!-- Application Icons & Manifest (Inline Data URI avoids CORS/307 redirects under auth proxies) -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="apple-touch-icon" href="/favicon.svg">
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22NonAI%20-%20AI%20%E6%95%B8%E4%BD%8D%E6%8C%87%E7%B4%8B%E8%88%87%E9%9A%B1%E8%97%8F%E7%97%95%E8%B7%A1%E6%B6%88%E9%99%A4%E7%B3%BB%E7%B5%B1%22%2C%22short_name%22%3A%22NonAI%22%2C%22start_url%22%3A%22%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230b0f19%22%2C%22theme_color%22%3A%22%232563eb%22%7D">
 
   <!-- Open Graph / Facebook / Discord -->
   <meta property="og:type" content="website">
@@ -139,7 +139,7 @@
         <div>
           <div class="brand-title-wrap">
             <h1>NonAI</h1>
-            <span id="appVersionBadge" class="version-badge" title="系統版本號">v1.1.1</span>
+            <span id="appVersionBadge" class="version-badge" title="系統版本號">v1.1.2</span>
           </div>
           <p class="subtitle" data-i18n="brand_sub">AI 數位指紋、浮水印與底層元資料消除引擎</p>
         </div>
@@ -412,27 +412,27 @@
             </div>
           </div>
         </div>
-      </section>
 
-      <!-- Educational FAQ & Knowledge Section for Enhanced SEO -->
-      <section class="card faq-section">
-        <h3 data-i18n="faq_header">💡 關於 AI 指紋與 NonAI 核心技術問答</h3>
-        <div class="faq-grid">
-          <div class="faq-item">
-            <h4 data-i18n="faq_q1">什麼是 Word 檔中的 RSID 破綻？</h4>
-            <p data-i18n="faq_a1">正常人類撰寫 Word 時，每次鍵盤輸入停頓、回溯修改與存檔，都會在 <code>document.xml</code> 中留下數十組不同的修訂儲存識別碼（RSID）。AI 系統直接封裝的 DOCX 通常只有 1 組全域 RSID 或完全沒有，一眼就會被鑑識程式辨識。NonAI 會仿生注入 20~40 組會話並碎形化拆分段落。</p>
-          </div>
-          <div class="faq-item">
-            <h4 data-i18n="faq_q2">為什麼複製文字會留下「幽靈底色」？</h4>
-            <p data-i18n="faq_a2">從網頁對話框反白文字時，剪貼簿會夾帶 <code>&lt;span style="background-color: #f7f7f8"&gt;</code> 等 HEX 底色與 Inter 特徵字體。若直接貼入文件，這些樣式會永久存留在底層 XML。NonAI 剪貼簿守護可在複製瞬間自動脫水淨化。</p>
-          </div>
-          <div class="faq-item">
-            <h4 data-i18n="faq_q3">如何對抗統計型浮水印 (如 SynthID)？</h4>
-            <p data-i18n="faq_a3">統計型浮水印利用偽隨機綠色詞庫（Green List）偏好選詞。NonAI 透過打斷 10%~15% 的 n-gram 鏈結、替換「值得注意的是」等高頻套話，能使檢測演算法的 z-score 機率顯著性崩潰，保護創作者文意不受干擾。</p>
-          </div>
-          <div class="faq-item">
-            <h4 data-i18n="faq_q4">NonAI 是否保證完全隱私與離線？</h4>
-            <p data-i18n="faq_a4">是的。NonAI 採用完全本地離線架構，檔案清洗運算與二進位生成全在您的本機電腦或瀏覽器內部完成，絕不上傳雲端伺服器儲存。</p>
+        <!-- Educational FAQ & Knowledge Section (Inside Manual Tab) -->
+        <div class="card faq-section" style="margin-top: 24px;">
+          <h3 data-i18n="faq_header">💡 關於 AI 指紋與 NonAI 核心技術問答</h3>
+          <div class="faq-grid">
+            <div class="faq-item">
+              <h4 data-i18n="faq_q1">什麼是 Word 檔中的 RSID 破綻？</h4>
+              <p data-i18n="faq_a1">正常人類撰寫 Word 時，每次鍵盤輸入停頓、回溯修改與存檔，都會在 <code>document.xml</code> 中留下數十組不同的修訂儲存識別碼（RSID）。AI 系統直接封裝的 DOCX 通常只有 1 組全域 RSID 或完全沒有，一眼就會被鑑識程式辨識。NonAI 會仿生注入 20~40 組會話並碎形化拆分段落。</p>
+            </div>
+            <div class="faq-item">
+              <h4 data-i18n="faq_q2">為什麼複製文字會留下「幽靈底色」？</h4>
+              <p data-i18n="faq_a2">從網頁對話框反白文字時，剪貼簿會夾帶 <code>&lt;span style="background-color: #f7f7f8"&gt;</code> 等 HEX 底色與 Inter 特徵字體。若直接貼入文件，這些樣式會永久存留在底層 XML。NonAI 剪貼簿守護可在複製瞬間自動脫水淨化。</p>
+            </div>
+            <div class="faq-item">
+              <h4 data-i18n="faq_q3">如何對抗統計型浮水印 (如 SynthID)？</h4>
+              <p data-i18n="faq_a3">統計型浮水印利用偽隨機綠色詞庫（Green List）偏好選詞。NonAI 透過打斷 10%~15% 的 n-gram 鏈結、替換「值得注意的是」等高頻套話，能使檢測演算法的 z-score 機率顯著性崩潰，保護創作者文意不受干擾。</p>
+            </div>
+            <div class="faq-item">
+              <h4 data-i18n="faq_q4">NonAI 是否保證完全隱私與離線？</h4>
+              <p data-i18n="faq_a4">是的。NonAI 採用完全本地離線架構，檔案清洗運算與二進位生成全在您的本機電腦或瀏覽器內部完成，絕不上傳雲端伺服器儲存。</p>
+            </div>
           </div>
         </div>
       </section>
