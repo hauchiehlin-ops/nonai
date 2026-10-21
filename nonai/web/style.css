@@ -121,6 +121,41 @@ body {
   color: var(--text-muted);
 }
 
+/* Header Actions: Language Selector + Watcher */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.lang-selector-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--bg-card);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  min-height: 44px;
+}
+
+.lang-icon {
+  font-size: 1.1rem;
+}
+
+.lang-select {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
 /* Watcher widget in header */
 .watcher-widget {
   display: flex;
@@ -131,6 +166,7 @@ body {
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
+  min-height: 44px;
 }
 
 .watcher-status-indicator {
@@ -291,6 +327,165 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.label-with-timing {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.timing-badge-btn {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.4;
+  min-height: 24px;
+}
+
+.timing-badge-btn:hover {
+  background-color: var(--primary);
+  color: #ffffff;
+  transform: scale(1.04);
+}
+
+/* Contextual Timing Popover Card */
+.timing-popover-card {
+  margin-top: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--primary);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-md);
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.timing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.timing-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--primary);
+}
+
+.timing-close {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 2px 6px;
+  border-radius: 4px;
+  min-height: 30px;
+}
+
+.timing-close:hover {
+  color: var(--text-main);
+  background: var(--bg-app);
+}
+
+.timing-content {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-main);
+}
+
+/* User Manual Tab Styles */
+.manual-card {
+  padding: 28px;
+}
+
+.manual-header {
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 16px;
+}
+
+.manual-header h2 {
+  margin: 0 0 6px 0;
+  font-size: 1.4rem;
+}
+
+.manual-workflow-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.step-card {
+  display: flex;
+  gap: 18px;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+.step-badge {
+  background: var(--primary);
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  align-self: flex-start;
+  white-space: nowrap;
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-content h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+}
+
+.step-content p {
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.step-content ul {
+  margin: 8px 0 12px 20px;
+  padding: 0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.step-tip {
+  background-color: var(--bg-card);
+  border-left: 3px solid var(--success);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+  .step-card {
+    flex-direction: column;
+    gap: 10px;
+  }
 }
 
 .form-group label {

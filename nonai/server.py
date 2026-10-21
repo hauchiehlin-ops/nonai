@@ -28,8 +28,12 @@ app = FastAPI(title="NonAI - AI Fingerprint Removal Platform")
 # In-memory storage for processed downloadable files
 DOWNLOAD_CACHE = {}
 
-# Global clipboard watcher instance
+# Global clipboard watcher instance - Default to active state
 watcher_instance = ClipboardWatcher(poll_interval=0.5)
+try:
+    watcher_instance.start()
+except Exception:
+    pass
 
 class CleanTextRequest(BaseModel):
     text: str
