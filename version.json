@@ -1,7 +1,7 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "release_date": "2026-10-22",
   "bump_level": "minor",
   "description": "Cross-format forensic hardening (DOCX/PDF/MD/TXT), Claude Docs provenance eradication, Microsoft Word package synthesis, and neural transformer de-patterning.",
-  "timestamp": "2026-10-22T01:35:46.298636"
+  "timestamp": "2026-10-22T01:57:13.041207"
 }

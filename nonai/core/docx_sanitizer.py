@@ -17,6 +17,8 @@ from lxml import etree
 
 from nonai.core.unicode_cleaner import clean_unicode
 from nonai.core.semantic_perturb import perturb_text, PerturbResult
+from nonai.core.semantic_restructure import restructure_semantics_and_burstiness, RestructureResult
+from nonai.core.fact_citation_auditor import audit_fact_citations, FactCitationAuditResult
 
 # OpenXML Namespaces
 W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -157,6 +159,8 @@ class DocxSanitizeResult:
     semantic_reorganized: int = 0
     claude_signatures_purged: int = 0
     missing_parts_synthesized: List[str] = field(default_factory=list)
+    stage1_restructure_metrics: Optional[Dict[str, Any]] = None
+    stage2_fact_citation_audit: Optional[Dict[str, Any]] = None
 
 
 def _generate_rsid_pool(count: int = 30) -> List[str]:
@@ -172,16 +176,18 @@ def _clean_text_nodes_and_perturb(
     root: etree._Element,
     enable_perturb: bool = True,
     intensity: float = 0.7
-) -> Tuple[int, int, int]:
+) -> Tuple[int, int, int, Dict[str, Any], Dict[str, Any]]:
     """
     Find all <w:t> elements:
     1. Strip invisible unicode characters.
-    2. If enable_perturb, apply deep semantic humanization and n-gram disruption.
-    Returns (unicode_cleaned, semantic_replacements, semantic_reorganized).
+    2. If enable_perturb, apply deep semantic restructuring, AI cliché purging, and burstiness reshaping.
+    3. Run Stage 2 fact and citation audit across the complete document text.
+    Returns (unicode_cleaned, semantic_replacements, semantic_reorganized, stage1_metrics, stage2_audit).
     """
     total_unicode_cleaned = 0
     total_replacements = 0
     total_reorganized = 0
+    all_texts = []
 
     for t_elem in root.iter(f"{{{W_NS}}}t"):
         if t_elem.text:
@@ -190,8 +196,15 @@ def _clean_text_nodes_and_perturb(
             curr_text = clean_res.cleaned_text
             total_unicode_cleaned += clean_res.total_removed
 
-            # 2. Semantic perturbation
+            # 2. Stage 1: Semantic restructure & burstiness
             if enable_perturb and len(curr_text.strip()) > 3:
+                # First run semantic restructurer (cliché purge + burstiness)
+                s_res = restructure_semantics_and_burstiness(curr_text, target_cv=0.65)
+                curr_text = s_res.cleaned_text
+                total_replacements += s_res.metrics.cliches_purged_count
+                total_reorganized += s_res.metrics.rules_of_three_disrupted + s_res.metrics.short_punchy_sentences_created
+
+                # Next run fine-grained perturbations
                 p_res = perturb_text(
                     curr_text,
                     intensity=intensity,
@@ -203,8 +216,57 @@ def _clean_text_nodes_and_perturb(
                 total_reorganized += p_res.sentences_reorganized
 
             t_elem.text = curr_text
+            all_texts.append(curr_text)
 
-    return total_unicode_cleaned, total_replacements, total_reorganized
+    # 3. Stage 2: Audit Fact & Citation Anchoring on full document text
+    full_doc_text = "\n".join(all_texts)
+    fact_audit = audit_fact_citations(full_doc_text)
+
+    # Convert audit to serializable dict
+    stage2_audit_dict = {
+        "fact_integrity_score": fact_audit.fact_integrity_score,
+        "summary_verdict": fact_audit.summary_verdict,
+        "total_claims_detected": fact_audit.total_claims_detected,
+        "unanchored_claims_count": fact_audit.unanchored_claims_count,
+        "anchored_claims_count": fact_audit.anchored_claims_count,
+        "unanchored_rate": fact_audit.unanchored_rate,
+        "unanchored_claims": [
+            {
+                "sentence_index": c.sentence_index,
+                "sentence_text": c.sentence_text,
+                "claim_type": c.claim_type,
+                "matched_clue": c.matched_clue,
+                "risk_level": c.risk_level,
+                "recommendation": c.recommendation
+            } for c in fact_audit.unanchored_claims[:20]  # top 20
+        ],
+        "total_references_detected": fact_audit.total_references_detected,
+        "valid_references_count": fact_audit.valid_references_count,
+        "suspicious_references_count": fact_audit.suspicious_references_count,
+        "references": [
+            {
+                "entry_index": r.entry_index,
+                "raw_text": r.raw_text,
+                "doi": r.doi,
+                "is_complete": r.is_complete,
+                "hallucination_risk": r.hallucination_risk,
+                "notes": r.notes
+            } for r in fact_audit.references[:20]
+        ]
+    }
+
+    # Evaluate full document burstiness for Stage 1 metrics
+    stage1_metrics_res = restructure_semantics_and_burstiness(full_doc_text, target_cv=0.65)
+    stage1_metrics_dict = {
+        "original_cv": stage1_metrics_res.metrics.original_cv,
+        "reshaped_cv": stage1_metrics_res.metrics.reshaped_cv,
+        "burstiness_boost_percent": stage1_metrics_res.metrics.burstiness_boost_percent,
+        "cliches_purged_count": total_replacements,
+        "short_punchy_sentences_created": total_reorganized,
+        "cliche_replacements": stage1_metrics_res.metrics.cliche_replacements[:15]
+    }
+
+    return total_unicode_cleaned, total_replacements, total_reorganized, stage1_metrics_dict, stage2_audit_dict
 
 
 def _strip_ghost_shading_and_fonts(root: etree._Element) -> Tuple[int, List[str]]:
@@ -637,11 +699,14 @@ def sanitize_docx(
 
     rsid_pool = _generate_rsid_pool(rsid_session_count)
 
+    stage1_metrics = {}
+    stage2_audit = {}
+
     if "word/document.xml" in xml_files:
         doc_root = etree.fromstring(xml_files["word/document.xml"])
 
-        # 3A. Clean unicode & apply deep semantic perturbation to defeat neural classifiers
-        unicode_removed, semantic_replacements, semantic_reorganized = _clean_text_nodes_and_perturb(
+        # 3A. Clean unicode, apply Stage 1 semantic restructure & Stage 2 fact-citation audit
+        unicode_removed, semantic_replacements, semantic_reorganized, stage1_metrics, stage2_audit = _clean_text_nodes_and_perturb(
             doc_root,
             enable_perturb=enable_perturb,
             intensity=perturb_intensity
@@ -751,5 +816,7 @@ def sanitize_docx(
         semantic_replacements=semantic_replacements,
         semantic_reorganized=semantic_reorganized,
         claude_signatures_purged=claude_purged_count,
-        missing_parts_synthesized=missing_synthesized
+        missing_parts_synthesized=missing_synthesized,
+        stage1_restructure_metrics=stage1_metrics,
+        stage2_fact_citation_audit=stage2_audit
     )

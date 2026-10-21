@@ -21,8 +21,11 @@ from nonai.core.docx_sanitizer import sanitize_docx
 from nonai.core.pdf_sanitizer import sanitize_pdf
 from nonai.core.markdown_cleaner import clean_markdown
 from nonai.core.semantic_perturb import perturb_text
+from nonai.core.semantic_restructure import restructure_semantics_and_burstiness
+from nonai.core.fact_citation_auditor import audit_fact_citations
 from nonai.core.detector_audit import audit_text_fingerprints
 from nonai.clipboard.watcher import ClipboardWatcher, ClipboardEvent
+from pypdf import PdfReader
 
 app = FastAPI(title="NonAI - AI Fingerprint Removal Platform")
 
@@ -78,11 +81,55 @@ async def api_clean_text(req: CleanTextRequest):
         md_res = clean_markdown(cleaned, strip_unicode=False)
         cleaned = md_res.cleaned_text
 
-    # 4. Optional perturbation
+    # 4. Optional perturbation & Stage 1 Semantic Restructuring
     p_res = None
+    stage1_metrics = None
     if req.enable_perturb:
+        s_res = restructure_semantics_and_burstiness(cleaned, target_cv=0.65)
+        cleaned = s_res.cleaned_text
+        stage1_metrics = {
+            "original_cv": s_res.metrics.original_cv,
+            "reshaped_cv": s_res.metrics.reshaped_cv,
+            "burstiness_boost_percent": s_res.metrics.burstiness_boost_percent,
+            "cliches_purged_count": s_res.metrics.cliches_purged_count,
+            "cliche_replacements": s_res.metrics.cliche_replacements[:15]
+        }
         p_res = perturb_text(cleaned, intensity=req.perturb_intensity)
         cleaned = p_res.perturbed_text
+
+    # 5. Stage 2 Fact & Citation Audit
+    fact_audit = audit_fact_citations(cleaned)
+    stage2_audit = {
+        "fact_integrity_score": fact_audit.fact_integrity_score,
+        "summary_verdict": fact_audit.summary_verdict,
+        "total_claims_detected": fact_audit.total_claims_detected,
+        "unanchored_claims_count": fact_audit.unanchored_claims_count,
+        "anchored_claims_count": fact_audit.anchored_claims_count,
+        "unanchored_rate": fact_audit.unanchored_rate,
+        "unanchored_claims": [
+            {
+                "sentence_index": c.sentence_index,
+                "sentence_text": c.sentence_text,
+                "claim_type": c.claim_type,
+                "matched_clue": c.matched_clue,
+                "risk_level": c.risk_level,
+                "recommendation": c.recommendation
+            } for c in fact_audit.unanchored_claims[:20]
+        ],
+        "total_references_detected": fact_audit.total_references_detected,
+        "valid_references_count": fact_audit.valid_references_count,
+        "suspicious_references_count": fact_audit.suspicious_references_count,
+        "references": [
+            {
+                "entry_index": r.entry_index,
+                "raw_text": r.raw_text,
+                "doi": r.doi,
+                "is_complete": r.is_complete,
+                "hallucination_risk": r.hallucination_risk,
+                "notes": r.notes
+            } for r in fact_audit.references[:20]
+        ]
+    }
 
     audit_after = audit_text_fingerprints(cleaned)
 
@@ -105,6 +152,8 @@ async def api_clean_text(req: CleanTextRequest):
             "reorganized": p_res.sentences_reorganized if p_res else 0,
             "disruption_rate": p_res.estimated_ngram_disruption_rate if p_res else 0,
         } if p_res else None,
+        "stage1_restructure": stage1_metrics,
+        "stage2_fact_citation": stage2_audit,
         "audit_before": {
             "risk_score": audit_before.overall_risk_score,
             "risk_level": audit_before.risk_level,
@@ -165,7 +214,10 @@ async def api_clean_file(
                 "semantic_replacements": docx_res.semantic_replacements,
                 "semantic_reorganized": docx_res.semantic_reorganized,
                 "claude_signatures_purged": docx_res.claude_signatures_purged,
-                "missing_parts_synthesized": docx_res.missing_parts_synthesized
+                "missing_parts_synthesized": docx_res.missing_parts_synthesized,
+                "burstiness_boost": docx_res.stage1_restructure_metrics.get("burstiness_boost_percent", 0.0) if docx_res.stage1_restructure_metrics else 0.0,
+                "unanchored_claims_count": docx_res.stage2_fact_citation_audit.get("unanchored_claims_count", 0) if docx_res.stage2_fact_citation_audit else 0,
+                "fact_integrity_score": docx_res.stage2_fact_citation_audit.get("fact_integrity_score", 100) if docx_res.stage2_fact_citation_audit else 100
             },
             "details": {
                 "rsid_pool": docx_res.rsid_pool,
@@ -179,7 +231,9 @@ async def api_clean_file(
                 "semantic_replacements": docx_res.semantic_replacements,
                 "semantic_reorganized": docx_res.semantic_reorganized,
                 "claude_signatures_purged": docx_res.claude_signatures_purged,
-                "missing_parts_synthesized": docx_res.missing_parts_synthesized
+                "missing_parts_synthesized": docx_res.missing_parts_synthesized,
+                "stage1_restructure": docx_res.stage1_restructure_metrics,
+                "stage2_fact_citation": docx_res.stage2_fact_citation_audit
             }
         }
 
@@ -191,6 +245,56 @@ async def api_clean_file(
         )
         mime = "application/pdf"
         file_b64 = base64.b64encode(pdf_res.cleaned_bytes).decode("ascii")
+
+        # Extract text from PDF for Stage 1 & Stage 2 analytical audit
+        stage1_pdf_dict = None
+        stage2_pdf_dict = None
+        try:
+            reader = PdfReader(io.BytesIO(content))
+            pdf_text = "\n".join(page.extract_text() or "" for page in reader.pages)
+            if pdf_text.strip():
+                s_res = restructure_semantics_and_burstiness(pdf_text, target_cv=0.65)
+                f_res = audit_fact_citations(pdf_text)
+                stage1_pdf_dict = {
+                    "original_cv": s_res.metrics.original_cv,
+                    "reshaped_cv": s_res.metrics.reshaped_cv,
+                    "burstiness_boost_percent": s_res.metrics.burstiness_boost_percent,
+                    "cliches_purged_count": s_res.metrics.cliches_purged_count,
+                    "cliche_replacements": s_res.metrics.cliche_replacements[:15]
+                }
+                stage2_pdf_dict = {
+                    "fact_integrity_score": f_res.fact_integrity_score,
+                    "summary_verdict": f_res.summary_verdict,
+                    "total_claims_detected": f_res.total_claims_detected,
+                    "unanchored_claims_count": f_res.unanchored_claims_count,
+                    "anchored_claims_count": f_res.anchored_claims_count,
+                    "unanchored_rate": f_res.unanchored_rate,
+                    "unanchored_claims": [
+                        {
+                            "sentence_index": c.sentence_index,
+                            "sentence_text": c.sentence_text,
+                            "claim_type": c.claim_type,
+                            "matched_clue": c.matched_clue,
+                            "risk_level": c.risk_level,
+                            "recommendation": c.recommendation
+                        } for c in f_res.unanchored_claims[:20]
+                    ],
+                    "total_references_detected": f_res.total_references_detected,
+                    "valid_references_count": f_res.valid_references_count,
+                    "suspicious_references_count": f_res.suspicious_references_count,
+                    "references": [
+                        {
+                            "entry_index": r.entry_index,
+                            "raw_text": r.raw_text,
+                            "doi": r.doi,
+                            "is_complete": r.is_complete,
+                            "hallucination_risk": r.hallucination_risk,
+                            "notes": r.notes
+                        } for r in f_res.references[:20]
+                    ]
+                }
+        except Exception:
+            pass
 
         DOWNLOAD_CACHE[file_id] = {
             "bytes": pdf_res.cleaned_bytes,
@@ -210,7 +314,9 @@ async def api_clean_file(
                 "spoofed_creator": pdf_res.spoofed_creator,
                 "xmp_cleaned": pdf_res.xmp_cleaned,
                 "pages": pdf_res.total_pages,
-                "ai_signatures_purged": pdf_res.ai_signatures_purged
+                "ai_signatures_purged": pdf_res.ai_signatures_purged,
+                "unanchored_claims_count": stage2_pdf_dict.get("unanchored_claims_count", 0) if stage2_pdf_dict else 0,
+                "fact_integrity_score": stage2_pdf_dict.get("fact_integrity_score", 100) if stage2_pdf_dict else 100
             },
             "details": {
                 "original_producer": pdf_res.original_producer,
@@ -221,7 +327,9 @@ async def api_clean_file(
                 "pages": pdf_res.total_pages,
                 "ai_signatures_purged": pdf_res.ai_signatures_purged,
                 "metadata_fields_cleaned": pdf_res.metadata_fields_cleaned,
-                "original_metadata": pdf_res.original_metadata
+                "original_metadata": pdf_res.original_metadata,
+                "stage1_restructure": stage1_pdf_dict,
+                "stage2_fact_citation": stage2_pdf_dict
             }
         }
 
@@ -234,9 +342,54 @@ async def api_clean_file(
         )
         final_text = md_res.cleaned_text
 
+        # Run Stage 1 & Stage 2 audits on markdown text
+        s_res = restructure_semantics_and_burstiness(final_text, target_cv=0.65)
+        f_res = audit_fact_citations(final_text)
+        final_text = s_res.cleaned_text
+
         cleaned_bytes = final_text.encode("utf-8")
         mime = "text/markdown"
         file_b64 = base64.b64encode(cleaned_bytes).decode("ascii")
+
+        stage1_dict = {
+            "original_cv": s_res.metrics.original_cv,
+            "reshaped_cv": s_res.metrics.reshaped_cv,
+            "burstiness_boost_percent": s_res.metrics.burstiness_boost_percent,
+            "cliches_purged_count": s_res.metrics.cliches_purged_count,
+            "short_punchy_sentences_created": s_res.metrics.short_punchy_sentences_created,
+            "cliche_replacements": s_res.metrics.cliche_replacements[:15]
+        }
+        stage2_dict = {
+            "fact_integrity_score": f_res.fact_integrity_score,
+            "summary_verdict": f_res.summary_verdict,
+            "total_claims_detected": f_res.total_claims_detected,
+            "unanchored_claims_count": f_res.unanchored_claims_count,
+            "anchored_claims_count": f_res.anchored_claims_count,
+            "unanchored_rate": f_res.unanchored_rate,
+            "unanchored_claims": [
+                {
+                    "sentence_index": c.sentence_index,
+                    "sentence_text": c.sentence_text,
+                    "claim_type": c.claim_type,
+                    "matched_clue": c.matched_clue,
+                    "risk_level": c.risk_level,
+                    "recommendation": c.recommendation
+                } for c in f_res.unanchored_claims[:20]
+            ],
+            "total_references_detected": f_res.total_references_detected,
+            "valid_references_count": f_res.valid_references_count,
+            "suspicious_references_count": f_res.suspicious_references_count,
+            "references": [
+                {
+                    "entry_index": r.entry_index,
+                    "raw_text": r.raw_text,
+                    "doi": r.doi,
+                    "is_complete": r.is_complete,
+                    "hallucination_risk": r.hallucination_risk,
+                    "notes": r.notes
+                } for r in f_res.references[:20]
+            ]
+        }
 
         DOWNLOAD_CACHE[file_id] = {
             "bytes": cleaned_bytes,
@@ -254,16 +407,20 @@ async def api_clean_file(
                 "tables_de_perfectionized": md_res.tables_de_perfectionized,
                 "lists_varied": md_res.lists_varied,
                 "ai_bookends_removed": md_res.ai_bookends_removed,
-                "semantic_replacements": md_res.semantic_replacements,
-                "semantic_reorganized": md_res.semantic_reorganized
+                "semantic_replacements": md_res.semantic_replacements + s_res.metrics.cliches_purged_count,
+                "semantic_reorganized": md_res.semantic_reorganized + s_res.metrics.short_punchy_sentences_created,
+                "unanchored_claims_count": f_res.unanchored_claims_count,
+                "fact_integrity_score": f_res.fact_integrity_score
             },
             "details": {
                 "unicode_removed": md_res.unicode_chars_removed,
                 "tables_de_perfectionized": md_res.tables_de_perfectionized,
                 "lists_varied": md_res.lists_varied,
                 "ai_bookends_removed": md_res.ai_bookends_removed,
-                "semantic_replacements": md_res.semantic_replacements,
-                "semantic_reorganized": md_res.semantic_reorganized
+                "semantic_replacements": md_res.semantic_replacements + s_res.metrics.cliches_purged_count,
+                "semantic_reorganized": md_res.semantic_reorganized + s_res.metrics.short_punchy_sentences_created,
+                "stage1_restructure": stage1_dict,
+                "stage2_fact_citation": stage2_dict
             }
         }
 
@@ -280,9 +437,54 @@ async def api_clean_file(
             p_replacements = p_res.replacements_made
             p_reorganized = p_res.sentences_reorganized
 
+        # Run Stage 1 & Stage 2 audits on TXT
+        s_res = restructure_semantics_and_burstiness(final_text, target_cv=0.65)
+        f_res = audit_fact_citations(final_text)
+        final_text = s_res.cleaned_text
+
         cleaned_bytes = final_text.encode("utf-8")
         mime = "text/plain"
         file_b64 = base64.b64encode(cleaned_bytes).decode("ascii")
+
+        stage1_dict = {
+            "original_cv": s_res.metrics.original_cv,
+            "reshaped_cv": s_res.metrics.reshaped_cv,
+            "burstiness_boost_percent": s_res.metrics.burstiness_boost_percent,
+            "cliches_purged_count": s_res.metrics.cliches_purged_count,
+            "short_punchy_sentences_created": s_res.metrics.short_punchy_sentences_created,
+            "cliche_replacements": s_res.metrics.cliche_replacements[:15]
+        }
+        stage2_dict = {
+            "fact_integrity_score": f_res.fact_integrity_score,
+            "summary_verdict": f_res.summary_verdict,
+            "total_claims_detected": f_res.total_claims_detected,
+            "unanchored_claims_count": f_res.unanchored_claims_count,
+            "anchored_claims_count": f_res.anchored_claims_count,
+            "unanchored_rate": f_res.unanchored_rate,
+            "unanchored_claims": [
+                {
+                    "sentence_index": c.sentence_index,
+                    "sentence_text": c.sentence_text,
+                    "claim_type": c.claim_type,
+                    "matched_clue": c.matched_clue,
+                    "risk_level": c.risk_level,
+                    "recommendation": c.recommendation
+                } for c in f_res.unanchored_claims[:20]
+            ],
+            "total_references_detected": f_res.total_references_detected,
+            "valid_references_count": f_res.valid_references_count,
+            "suspicious_references_count": f_res.suspicious_references_count,
+            "references": [
+                {
+                    "entry_index": r.entry_index,
+                    "raw_text": r.raw_text,
+                    "doi": r.doi,
+                    "is_complete": r.is_complete,
+                    "hallucination_risk": r.hallucination_risk,
+                    "notes": r.notes
+                } for r in f_res.references[:20]
+            ]
+        }
 
         DOWNLOAD_CACHE[file_id] = {
             "bytes": cleaned_bytes,
@@ -298,15 +500,19 @@ async def api_clean_file(
             "stats": {
                 "unicode_removed": u_res.total_removed,
                 "spaces_normalized": u_res.normalized_spaces,
-                "semantic_replacements": p_replacements,
-                "semantic_reorganized": p_reorganized
+                "semantic_replacements": p_replacements + s_res.metrics.cliches_purged_count,
+                "semantic_reorganized": p_reorganized + s_res.metrics.short_punchy_sentences_created,
+                "unanchored_claims_count": f_res.unanchored_claims_count,
+                "fact_integrity_score": f_res.fact_integrity_score
             },
             "details": {
                 "unicode_removed": u_res.total_removed,
                 "spaces_normalized": u_res.normalized_spaces,
                 "char_counts": u_res.char_counts,
-                "semantic_replacements": p_replacements,
-                "semantic_reorganized": p_reorganized
+                "semantic_replacements": p_replacements + s_res.metrics.cliches_purged_count,
+                "semantic_reorganized": p_reorganized + s_res.metrics.short_punchy_sentences_created,
+                "stage1_restructure": stage1_dict,
+                "stage2_fact_citation": stage2_dict
             }
         }
 

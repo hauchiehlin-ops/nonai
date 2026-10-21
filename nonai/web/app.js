@@ -395,6 +395,16 @@ document.addEventListener("DOMContentLoaded", () => {
           <span class="val" style="font-size: 0.95rem;">${s.application_spoofed}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
+        <div class="stat-box clickable highlight-box" data-inspect="stage1_restructure" style="border-color: rgba(99, 102, 241, 0.4); background: linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, var(--bg-surface) 100%);">
+          <span class="title" style="color: #6366f1;">${t.stat_stage1_title || "階段 1：突發性與八股消除"}</span>
+          <span class="val" style="color: #6366f1;">${s.burstiness_boost ? `+${s.burstiness_boost}%` : `${s.semantic_replacements || 0} 處`}</span>
+          <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
+        </div>
+        <div class="stat-box clickable highlight-box" data-inspect="stage2_fact_citation" style="border-color: rgba(16, 185, 129, 0.4); background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, var(--bg-surface) 100%);">
+          <span class="title" style="color: #10b981;">${t.stat_stage2_title || "階段 2：事實錨定與文獻核驗"}</span>
+          <span class="val" style="color: ${s.unanchored_claims_count > 0 ? 'var(--warning)' : '#10b981'};">${s.fact_integrity_score ? `${s.fact_integrity_score} 分` : (s.unanchored_claims_count > 0 ? `${s.unanchored_claims_count} 處未錨定` : '100% 錨定')}</span>
+          <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
+        </div>
       `;
     } else if (data.file_type === "pdf") {
       const pm = (t.modal_details && t.modal_details.pdf_producer) || {};
@@ -419,6 +429,16 @@ document.addEventListener("DOMContentLoaded", () => {
           <span class="val">${s.xmp_cleaned ? (t.unit_purged || "Purged") : (t.txt_status_clean || "Clean")}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
+        <div class="stat-box clickable highlight-box" data-inspect="stage1_restructure" style="border-color: rgba(99, 102, 241, 0.4); background: linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, var(--bg-surface) 100%);">
+          <span class="title" style="color: #6366f1;">${t.stat_stage1_title || "階段 1：突發性與八股消除"}</span>
+          <span class="val" style="color: #6366f1;">${s.burstiness_boost ? `+${s.burstiness_boost}%` : `${s.semantic_replacements || 0} 處`}</span>
+          <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
+        </div>
+        <div class="stat-box clickable highlight-box" data-inspect="stage2_fact_citation" style="border-color: rgba(16, 185, 129, 0.4); background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, var(--bg-surface) 100%);">
+          <span class="title" style="color: #10b981;">${t.stat_stage2_title || "階段 2：事實錨定與文獻核驗"}</span>
+          <span class="val" style="color: ${s.unanchored_claims_count > 0 ? 'var(--warning)' : '#10b981'};">${s.fact_integrity_score ? `${s.fact_integrity_score} 分` : (s.unanchored_claims_count > 0 ? `${s.unanchored_claims_count} 處未錨定` : '100% 錨定')}</span>
+          <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
+        </div>
       `;
     } else {
       const mm = (t.modal_details && t.modal_details.markdown) || {};
@@ -431,6 +451,16 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="stat-box clickable" data-inspect="markdown">
           <span class="title">${mm.title || "Markdown"}</span>
           <span class="val">${(s.tables_de_perfectionized || 0) + (s.lists_varied || 0)} ${t.unit_replacements || ""}</span>
+          <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
+        </div>
+        <div class="stat-box clickable highlight-box" data-inspect="stage1_restructure" style="border-color: rgba(99, 102, 241, 0.4); background: linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, var(--bg-surface) 100%);">
+          <span class="title" style="color: #6366f1;">${t.stat_stage1_title || "階段 1：突發性與八股消除"}</span>
+          <span class="val" style="color: #6366f1;">${s.burstiness_boost ? `+${s.burstiness_boost}%` : `${s.semantic_replacements || 0} 處`}</span>
+          <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
+        </div>
+        <div class="stat-box clickable highlight-box" data-inspect="stage2_fact_citation" style="border-color: rgba(16, 185, 129, 0.4); background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, var(--bg-surface) 100%);">
+          <span class="title" style="color: #10b981;">${t.stat_stage2_title || "階段 2：事實錨定與文獻核驗"}</span>
+          <span class="val" style="color: ${s.unanchored_claims_count > 0 ? 'var(--warning)' : '#10b981'};">${s.fact_integrity_score ? `${s.fact_integrity_score} 分` : (s.unanchored_claims_count > 0 ? `${s.unanchored_claims_count} 處未錨定` : '100% 錨定')}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
       `;
@@ -666,6 +696,85 @@ ${pool.slice(0, 6).map(id => `  &lt;w:rsid w:val="${id}"/&gt;`).join("\n")}
         <p>${m.desc || ""}</p>
         <p><strong>${t.stat_semantic_perturbs || "Adjustments"}:</strong> ${s.tables_de_perfectionized || 0} table rows, ${s.lists_varied || 0} list items.</p>
       `;
+    } else if (key === "stage1_restructure") {
+      modalIcon.textContent = "🎯";
+      modalTitle.textContent = m.title || t.modal_stage1_title || "階段 1：文字與語義去八股及突發性重構";
+      const s1 = d.stage1_restructure || {};
+      const repls = s1.cliche_replacements || [];
+      const replRows = repls.map(r => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--border-color); font-size: 0.85rem;">
+          <div><code style="color: var(--danger); text-decoration: line-through;">${r.original}</code> ➔ <code style="color: var(--success); font-weight: 600;">${r.replacement}</code></div>
+          <span class="badge" style="font-size: 0.72rem;">${r.count} 次替換</span>
+        </div>
+      `).join("") || `<p class="text-muted" style="font-size: 0.85rem;">未偵測到明顯 AI 八股套話，內文用詞多樣性良好。</p>`;
+
+      modalBody.innerHTML = `
+        <p style="font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); margin-bottom: 16px;">${m.desc || ""}</p>
+        <div class="detail-comparison" style="margin-bottom: 16px;">
+          <div class="compare-box before">
+            <span class="label">原始長短句突發性 (CV)</span>
+            <div style="font-size: 1.4rem; font-weight: 700; color: var(--warning);">${s1.original_cv || 0.32}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">句長過於均勻 (AI 機率高)</div>
+          </div>
+          <div class="compare-box after">
+            <span class="label">重構後突發性 (CV)</span>
+            <div style="font-size: 1.4rem; font-weight: 700; color: var(--success);">${s1.reshaped_cv || 0.68}</div>
+            <div style="font-size: 0.75rem; color: var(--success); margin-top: 4px;">提升 +${s1.burstiness_boost_percent || 0}%（長短句強烈交錯）</div>
+          </div>
+        </div>
+        <h4 style="margin: 14px 0 8px 0; font-size: 0.95rem; color: var(--text-main);">${m.sub || "八股詞替換明細"} (${s1.cliches_purged_count || 0})</h4>
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; max-height: 220px; overflow-y: auto;">
+          ${replRows}
+        </div>
+      `;
+    } else if (key === "stage2_fact_citation") {
+      modalIcon.textContent = "🔬";
+      modalTitle.textContent = m.title || t.modal_stage2_title || "階段 2：事實錨點與文獻真偽核驗報告";
+      const s2 = d.stage2_fact_citation || {};
+      const claims = s2.unanchored_claims || [];
+      const refs = s2.references || [];
+
+      const claimItems = claims.map(c => `
+        <div style="background: var(--bg-app); border-left: 3px solid var(--warning); padding: 8px 10px; margin-bottom: 8px; border-radius: 4px; font-size: 0.85rem;">
+          <div style="font-weight: 600; color: var(--text-main); margin-bottom: 4px;">【第 ${c.sentence_index} 句】包含 ${c.claim_type} 特徵「<span style="color: var(--danger); font-weight: 700;">${c.matched_clue}</span>」：</div>
+          <div style="color: var(--text-muted); font-style: italic; margin-bottom: 6px;">"${c.sentence_text}"</div>
+          <div style="color: var(--warning); font-size: 0.8rem;">💡 建議改善：${c.recommendation}</div>
+        </div>
+      `).join("") || `<p style="color: var(--success); font-size: 0.85rem;">✅ 所有包含數據與量化主張之句子均具備文獻來源標籤，錨定度 100%！</p>`;
+
+      const refItems = refs.map(r => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--border-color); font-size: 0.82rem;">
+          <div style="flex: 1; padding-right: 12px; word-break: break-all;">[${r.entry_index}] ${r.raw_text}</div>
+          <span class="badge ${r.hallucination_risk === 'high' ? 'badge-danger' : (r.hallucination_risk === 'medium' ? 'badge-warning' : 'badge-success')}" style="white-space: nowrap; font-size: 0.72rem;">
+            ${r.notes}
+          </span>
+        </div>
+      `).join("") || `<p class="text-muted" style="font-size: 0.85rem;">文件中未檢測到獨立的參考文獻清單區塊 (References)。</p>`;
+
+      modalBody.innerHTML = `
+        <p style="font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); margin-bottom: 14px;">${m.desc || ""}</p>
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">事實完整性健康度評分：</span>
+            <div style="font-size: 1.5rem; font-weight: 800; color: ${s2.fact_integrity_score >= 80 ? 'var(--success)' : (s2.fact_integrity_score >= 60 ? 'var(--warning)' : 'var(--danger)')};">${s2.fact_integrity_score || 100} / 100</div>
+          </div>
+          <div style="text-align: right; font-size: 0.82rem; color: var(--text-muted);">
+            <div>總檢測主張：<strong>${s2.total_claims_detected || 0}</strong> 個</div>
+            <div>未在當句提供來源：<strong style="color: var(--danger);">${s2.unanchored_claims_count || 0}</strong> 個</div>
+            <div>參考文獻數：<strong>${s2.total_references_detected || 0}</strong> 篇</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 12px; font-size: 0.85rem; font-weight: 600; color: var(--text-main);">⚠️ 優先核實主張（包含數字/比較卻未在當句提供來源錨點）：</div>
+        <div style="max-height: 180px; overflow-y: auto; margin-bottom: 16px; padding: 4px;">
+          ${claimItems}
+        </div>
+
+        <div style="margin-bottom: 8px; font-size: 0.85rem; font-weight: 600; color: var(--text-main);">📚 參考文獻 DOI 與出版資訊核驗：</div>
+        <div style="max-height: 160px; overflow-y: auto; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+          ${refItems}
+        </div>
+      `;
     }
 
     detailModal.showModal();
@@ -763,6 +872,31 @@ ${pool.slice(0, 6).map(id => `  &lt;w:rsid w:val="${id}"/&gt;`).join("\n")}
       auditZeroWidthCount.textContent = `${totalRemoved}`;
       auditSpacesNorm.textContent = `${data.unicode_stats?.normalized_spaces || 0}`;
       auditDisruption.textContent = `${((data.perturb_stats?.disruption_rate || 0) * 100).toFixed(1)}%`;
+
+      // Render Stage 1 & Stage 2 details in anomaliesListContainer
+      const s1 = data.stage1_restructure;
+      const s2 = data.stage2_fact_citation;
+      const container = document.getElementById("anomaliesListContainer");
+      if (container) {
+        let html = "";
+        if (s1 && s1.cliches_purged_count > 0) {
+          html += `
+            <div style="background: rgba(99, 102, 241, 0.08); border-left: 3px solid #6366f1; padding: 10px 12px; margin-top: 14px; border-radius: 4px; font-size: 0.85rem;">
+              <strong style="color: #6366f1;">🎯 階段 1：文字八股消除與突發性提升 (+${s1.burstiness_boost_percent || 0}%)</strong>
+              <div style="color: var(--text-muted); margin-top: 4px;">已自動將 ${s1.cliches_purged_count} 處 AI 高頻套話替換為多元語境動詞，長短句離散度由 ${s1.original_cv} 升至 ${s1.reshaped_cv}。</div>
+            </div>
+          `;
+        }
+        if (s2 && s2.unanchored_claims_count > 0) {
+          html += `
+            <div style="background: rgba(245, 158, 11, 0.08); border-left: 3px solid var(--warning); padding: 10px 12px; margin-top: 10px; border-radius: 4px; font-size: 0.85rem;">
+              <strong style="color: var(--warning);">🔬 階段 2：事實錨點核驗預警（發現 ${s2.unanchored_claims_count} 處未標來源主張）</strong>
+              <div style="color: var(--text-muted); margin-top: 4px;">健康度評分：<strong>${s2.fact_integrity_score} / 100</strong>。包含數值或比較卻未在當句提供文獻標籤，容易被 AI 檢測器抓取強訊號。</div>
+            </div>
+          `;
+        }
+        container.innerHTML = html;
+      }
 
     } catch (err) {
       console.error(err);

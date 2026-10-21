@@ -44,7 +44,8 @@ class TestI18nIntegrity(unittest.TestCase):
         expected_modal_keys = {
             "rsid", "runs_split", "claude_purged", "pkg_synthesized",
             "semantic", "ghost_styles", "unicode", "human_time",
-            "app_spoofed", "pdf_producer", "markdown"
+            "app_spoofed", "pdf_producer", "markdown",
+            "stage1_restructure", "stage2_fact_citation"
         }
 
         base_modals = data["zh-TW"]["modal_details"]

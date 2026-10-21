@@ -188,6 +188,16 @@ const I18N_TRANSLATIONS = {
       "markdown": {
         "title": "Markdown 結構去特徵化 - 自然排版",
         "desc": "<strong>Markdown 過度完美的對齊特徵：</strong><br>AI 輸出的 Markdown 表格常有極度精準的空白對齊。NonAI 將其自然化為人類常規的簡約排版，並隨機調節清單符號。"
+      },
+      "stage1_restructure": {
+        "title": "階段 1：文字與語義去八股及突發性重構",
+        "desc": "演算法自動掃描並消解 AI 八股套話與機械式過渡詞，重構長短句長度分佈，將突發性離散係數（Burstiness CV）提升至 0.65 以上，徹底打散神經網絡語言模型的預測機率。",
+        "sub": "八股詞替換明細與突發性指標"
+      },
+      "stage2_fact_citation": {
+        "title": "階段 2：事實錨點與文獻真偽核驗報告",
+        "desc": "深度審查文章中所有包含百分比、統計數據與比較歸因的句子，精準定位未在當句提供文獻依據的事實漏洞；同時核驗參考文獻 DOI 與出版資訊，預警虛構引用。",
+        "sub": "可查證事實與文獻完整性清單"
       }
     },
     "audit_risk": "AI 殘留綜合風險評分",
@@ -211,7 +221,11 @@ const I18N_TRANSLATIONS = {
     "wf_step3_desc": "將 Word (DOCX) 拖放至上方拖曳區洗滌，注入 20~40 組隨機 Word RSID 會話池與文字 Runs 碎形切分，抹除 ChatGPT/Claude 網頁底色並偽裝真實工時。",
     "wf_step4_badge": "階段 4",
     "wf_step4_title": "正規原生導出 PDF",
-    "wf_step4_desc": "切勿直接修改已定型排版的 PDF；應使用已洗滌的 DOCX 檔案，透過正版 Microsoft Word 或系統「列印/另存為 PDF」，產出 100% 潔淨無痕文件。"
+    "wf_step4_desc": "切勿直接修改已定型排版的 PDF；應使用已洗滌的 DOCX 檔案，透過正版 Microsoft Word 或系統「列印/另存為 PDF」，產出 100% 潔淨無痕文件。",
+    "stat_stage1_title": "階段 1：突發性與八股消除",
+    "stat_stage2_title": "階段 2：事實錨定與文獻核驗",
+    "modal_stage1_title": "階段 1：文字與語義去八股及突發性重構",
+    "modal_stage2_title": "階段 2：事實錨點與文獻真偽核驗報告"
   },
   "zh-CN": {
     "app_title": "NonAI - AI 数字指纹与隐藏痕迹消除系统",
@@ -399,6 +413,16 @@ const I18N_TRANSLATIONS = {
       "markdown": {
         "title": "Markdown 结构去特征化 - 自然排版",
         "desc": "<strong>Markdown 过度完美的对齐特征：</strong><br>AI 输出的 Markdown 表格常有极度精准的空格对齐。NonAI 将其自然化为人类常规的简约排版，并随机调节列表符号。"
+      },
+      "stage1_restructure": {
+        "title": "阶段 1：文字与语义去套话及突发性重构",
+        "desc": "算法自动扫描并消解 AI 套话与机械式过渡词，重构长短句长度分布，将突发性离散系数（Burstiness CV）提升至 0.65 以上，彻底打散神经网络语言模型的预测概率。",
+        "sub": "套话替换明细与突发性指标"
+      },
+      "stage2_fact_citation": {
+        "title": "阶段 2：事实锚点与文献真伪核验报告",
+        "desc": "深度审查文章中所有包含百分比、统计数据与比较归因的句子，精准定位未在当句提供文献依据的事实漏洞；同时核验参考文献 DOI 与出版信息，预警虚构引用。",
+        "sub": "可查证事实与文献完整性清单"
       }
     },
     "audit_risk": "AI 残留综合风险评分",
@@ -422,7 +446,11 @@ const I18N_TRANSLATIONS = {
     "wf_step3_desc": "将 Word (DOCX) 拖放至上方拖曳区洗涤，注入 20~40 组随机 Word RSID 会话池与文字 Runs 碎形切分，抹除 ChatGPT/Claude 网页底色并伪装真实工时。",
     "wf_step4_badge": "阶段 4",
     "wf_step4_title": "正规原生导出 PDF",
-    "wf_step4_desc": "切勿直接修改已定型排版的 PDF；应使用已洗涤的 DOCX 档案，透过正版 Microsoft Word 或系统「打印/另存为 PDF」，产出 100% 洁净无痕文件。"
+    "wf_step4_desc": "切勿直接修改已定型排版的 PDF；应使用已洗涤的 DOCX 档案，透过正版 Microsoft Word 或系统「打印/另存为 PDF」，产出 100% 洁净无痕文件。",
+    "stat_stage1_title": "阶段 1：突发性与套话消除",
+    "stat_stage2_title": "阶段 2：事实锚定与文献核验",
+    "modal_stage1_title": "阶段 1：文字与语义去套话及突发性重构",
+    "modal_stage2_title": "阶段 2：事实锚点与文献真伪核验报告"
   },
   "ja": {
     "app_title": "NonAI - AI デジタル指紋・痕跡消去システム",
@@ -610,6 +638,16 @@ const I18N_TRANSLATIONS = {
       "markdown": {
         "title": "Markdown 構造デパターニング - 自然な書式",
         "desc": "<strong>機械的に整いすぎた Markdown：</strong><br>過度に整列された表の空白を自然な簡約スタイルに戻し、箇条書き記号を人間らしく調整します。"
+      },
+      "stage1_restructure": {
+        "title": "ステップ 1：語彙脱定型化とバースト性再構築",
+        "desc": "AIの定型表現や機械的な接続詞を自動消去し、長短文の分布を再構築してバースト性CVを0.65以上に高め、言語モデルの予測確率を分散させます。",
+        "sub": "定型語置換詳細とバースト性指標"
+      },
+      "stage2_fact_citation": {
+        "title": "ステップ 2：事実アンカーと文献真正性検証レポート",
+        "desc": "割合、統計数値、比較主張を含むすべての文を精査し、引用欠落の事実ホールを特定。参考文献のDOIと出版情報を検証し、架空文献を警告します。",
+        "sub": "検証可能事実と文献整合性リスト"
       }
     },
     "audit_risk": "AI 指紋残留総合リスク評価",
@@ -633,7 +671,11 @@ const I18N_TRANSLATIONS = {
     "wf_step3_desc": "Word (DOCX)を上の領域にドロップし、20〜40組のWord RSID履歴プールとRuns分割を注入。ChatGPT/ClaudeのCSS残渣を消去し、実作業時間を偽装します。",
     "wf_step4_badge": "ステップ 4",
     "wf_step4_title": "正規ネイティブPDF出力",
-    "wf_step4_desc": "組版済みのPDF本文を直接編集しないでください。浄化済みDOCXを正規Microsoft WordまたはOS印刷機能で開き、ネイティブPDFとして出力して完全な真正性を確保します。"
+    "wf_step4_desc": "組版済みのPDF本文を直接編集しないでください。浄化済みDOCXを正規Microsoft WordまたはOS印刷機能で開き、ネイティブPDFとして出力して完全な真正性を確保します。",
+    "stat_stage1_title": "ステップ 1：バースト性と定型語消去",
+    "stat_stage2_title": "ステップ 2：事実アンカーと文献検証",
+    "modal_stage1_title": "ステップ 1：語彙脱定型化とバースト性再構築",
+    "modal_stage2_title": "ステップ 2：事実アンカーと文献真正性検証レポート"
   },
   "ko": {
     "app_title": "NonAI - AI 디지털 지문 및 숨김 흔적 제거 시스템",
@@ -821,6 +863,16 @@ const I18N_TRANSLATIONS = {
       "markdown": {
         "title": "Markdown 구조 탈특징화 - 자연스러운 서식",
         "desc": "<strong>기계적으로 완벽한 Markdown 서식 완화:</strong><br>과도하게 정렬된 표 공백을 자연스러운 간결 형태로 되돌리고 목록 기호를 무작위로 조율합니다."
+      },
+      "stage1_restructure": {
+        "title": "1단계: 어휘 정형화 탈피 및 버스트성 재구성",
+        "desc": "AI 상투어와 기계적 접속사를 자동 제거하고 문장 길이 분포를 재구성하여 버스트성 CV를 0.65 이상으로 끌어올려 언어 모델 확률을 완전히 분산시킵니다.",
+        "sub": "상투어 대체 내역 및 버스트성 지표"
+      },
+      "stage2_fact_citation": {
+        "title": "2단계: 사실 앵커링 및 문헌 진위 검증 보고서",
+        "desc": "백분율, 통계치, 비교 주장이 포함된 모든 문장을 심층 검토하여 출처가 누락된 허점을 식별하고, 참고문헌 DOI 및 출판 정보를 검증하여 가상 인용을 경고합니다.",
+        "sub": "검증 가능 사실 및 문헌 무결성 목록"
       }
     },
     "audit_risk": "AI 잔존 종합 위험도",
@@ -844,7 +896,11 @@ const I18N_TRANSLATIONS = {
     "wf_step3_desc": "Word (DOCX) 문서를 상단 영역에 드롭하여 20~40개의 RSID 세션 풀과 텍스트 Runs 분할을 주입합니다. ChatGPT/Claude 웹 스타일을 제거하고 실제 편집 시간을 모방합니다.",
     "wf_step4_badge": "4단계",
     "wf_step4_title": "정규 네이티브 PDF 내보내기",
-    "wf_step4_desc": "조판이 완료된 PDF 본문을 직접 수정하지 마십시오. 정화된 DOCX를 정품 Microsoft Word 또는 시스템 인쇄 엔진에서 열고 PDF로 내보내어 100% 무결점을 확보합니다."
+    "wf_step4_desc": "조판이 완료된 PDF 본문을 직접 수정하지 마십시오. 정화된 DOCX를 정품 Microsoft Word 또는 시스템 인쇄 엔진에서 열고 PDF로 내보내어 100% 무결점을 확보합니다.",
+    "stat_stage1_title": "1단계: 버스트성 및 상투어 제거",
+    "stat_stage2_title": "2단계: 사실 앵커링 및 문헌 검증",
+    "modal_stage1_title": "1단계: 어휘 정형화 탈피 및 버스트성 재구성",
+    "modal_stage2_title": "2단계: 사실 앵커링 및 문헌 진위 검증 보고서"
   },
   "th": {
     "app_title": "NonAI - ระบบลบลายพิมพ์นิ้วมือดิจิทัลและร่องรอย AI",
@@ -1032,6 +1088,16 @@ const I18N_TRANSLATIONS = {
       "markdown": {
         "title": "การผ่อนคลายโครงสร้าง Markdown - การจัดรูปแบบธรรมชาติ",
         "desc": "<strong>โครงสร้างที่ตรงเกินไปของ Markdown:</strong><br>ตารางและรายการที่สร้างจาก AI มักมีความสม่ำเสมอเกินไป NonAI ปรับให้กระชับและเป็นธรรมชาติเหมือนมนุษย์เขียน"
+      },
+      "stage1_restructure": {
+        "title": "ขั้นตอนที่ 1: การลดความซ้ำซากของภาษาและปรับความยาวประโยค",
+        "desc": "สแกนและลบคำซ้ำซากของ AI อัตโนมัติ ปรับโครงสร้างประโยคสั้นยาวเพื่อดันค่า Burstiness CV เกิน 0.65 สลายความน่าจะเป็นของโมเดลภาษาอย่างสิ้นเชิง",
+        "sub": "รายการคำที่ถูกแทนที่และดัชนี Burstiness"
+      },
+      "stage2_fact_citation": {
+        "title": "ขั้นตอนที่ 2: รายงานการเชื่อมโยงข้อเท็จจริงและความแท้จริงของเอกสาร",
+        "desc": "ตรวจสอบประโยคที่มีตัวเลข ร้อยละ และการเปรียบเทียบอย่างละเอียดเพื่อชี้จุดบกพร่องที่ขาดการอ้างอิง พร้อมตรวจ DOI และข้อมูลการตีพิมพ์เพื่อป้องกันเอกสารลวง",
+        "sub": "รายการข้อเท็จจริงที่ตรวจสอบได้และความสมบูรณ์ของเอกสาร"
       }
     },
     "audit_risk": "คะแนนความเสี่ยงลายเซ็น AI",
@@ -1055,7 +1121,11 @@ const I18N_TRANSLATIONS = {
     "wf_step3_desc": "ลากไฟล์ Word (.docx) วางลงในช่องด้านบนเพื่อฉีดกลุ่มประวัติ RSID 20-40 ชุดและตัดย่อย Runs ข้อความ ลบสีพื้นหลังเว็บของ ChatGPT/Claude พร้อมจำลองเวลาทำงานจริง",
     "wf_step4_badge": "ขั้นตอนที่ 4",
     "wf_step4_title": "การส่งออก PDF แบบเนทีฟ",
-    "wf_step4_desc": "อย่าแก้ไขข้อความในไฟล์ PDF ที่จัดหน้าเสร็จแล้วโดยตรง ควรเปิดไฟล์ DOCX ที่ผ่านการชำระล้างด้วย Microsoft Word ลิขสิทธิ์แท้หรือคำสั่งพิมพ์ของระบบ แล้วบันทึกเป็น PDF เพื่อความไร้ร่องรอย 100%"
+    "wf_step4_desc": "อย่าแก้ไขข้อความในไฟล์ PDF ที่จัดหน้าเสร็จแล้วโดยตรง ควรเปิดไฟล์ DOCX ที่ผ่านการชำระล้างด้วย Microsoft Word ลิขสิทธิ์แท้หรือคำสั่งพิมพ์ของระบบ แล้วบันทึกเป็น PDF เพื่อความไร้ร่องรอย 100%",
+    "stat_stage1_title": "ขั้นตอนที่ 1: การปรับภาษาและเพิ่มความแปรผัน",
+    "stat_stage2_title": "ขั้นตอนที่ 2: การตรวจสอบข้อเท็จจริงและเอกสาร",
+    "modal_stage1_title": "ขั้นตอนที่ 1: การลดความซ้ำซากของภาษาและปรับความยาวประโยค",
+    "modal_stage2_title": "ขั้นตอนที่ 2: รายงานการเชื่อมโยงข้อเท็จจริงและความแท้จริงของเอกสาร"
   },
   "ru": {
     "app_title": "NonAI - Удаление цифровых отпечатков и следов ИИ",
@@ -1243,6 +1313,16 @@ const I18N_TRANSLATIONS = {
       "markdown": {
         "title": "Депаттернизация Markdown - Естественная верстка",
         "desc": "<strong>Слишком идеальная верстка Markdown:</strong><br>ИИ выравнивает таблицы с точностью до пробела. NonAI приводит их к естественному компактному виду и варьирует маркеры списков."
+      },
+      "stage1_restructure": {
+        "title": "Этап 1: Снятие клише и реструктуризация вариативности (Burstiness)",
+        "desc": "Автоматически очищает штампы ИИ и механические связки, перестраивая длину предложений и повышая CV вариативности выше 0.65 для сбивания вероятностных моделей.",
+        "sub": "Список замен штампов и метрики вариативности"
+      },
+      "stage2_fact_citation": {
+        "title": "Этап 2: Проверка привязки фактов и аутентичности ссылок",
+        "desc": "Глубокая проверка предложений с процентами, статистикой и сравнениями на наличие ссылок; верификация DOI и реквизитов для выявления галлюцинаций ИИ.",
+        "sub": "Проверяемые факты и целостность списка литературы"
       }
     },
     "audit_risk": "Общий риск присутствия AI-следов",
@@ -1266,7 +1346,11 @@ const I18N_TRANSLATIONS = {
     "wf_step3_desc": "Перетащите Word (.docx) в зону выше для внедрения пула 20-40 сессий RSID и разбиения Runs, удаления стилей ChatGPT/Claude и маскировки времени работы человека.",
     "wf_step4_badge": "Этап 4",
     "wf_step4_title": "Нативный экспорт в PDF",
-    "wf_step4_desc": "Не редактируйте скомпилированные PDF напрямую. Откройте очищенный DOCX в лицензионном Microsoft Word или через печать системы и экспортируйте в PDF для 100% подлинности."
+    "wf_step4_desc": "Не редактируйте скомпилированные PDF напрямую. Откройте очищенный DOCX в лицензионном Microsoft Word или через печать системы и экспортируйте в PDF для 100% подлинности.",
+    "stat_stage1_title": "Этап 1: Вариативность и снятие штампов",
+    "stat_stage2_title": "Этап 2: Проверка фактов и источников",
+    "modal_stage1_title": "Этап 1: Снятие клише и реструктуризация вариативности (Burstiness)",
+    "modal_stage2_title": "Этап 2: Проверка привязки фактов и аутентичности ссылок"
   },
   "en": {
     "app_title": "NonAI - AI Digital Fingerprint & Watermark Stripper",
@@ -1454,6 +1538,16 @@ const I18N_TRANSLATIONS = {
       "markdown": {
         "title": "Markdown Structure De-Patterning - Natural Typography",
         "desc": "<strong>Markdown Overly Perfect Alignment:</strong><br>AI Markdown tables often feature rigidly padded whitespace alignment. NonAI normalizes tables into clean, natural human formatting and balances list bullets."
+      },
+      "stage1_restructure": {
+        "title": "Stage 1: Lexical De-patterning & Burstiness Reshaper",
+        "desc": "Automatically purges AI clichés and robotic transition markers, reshaping sentence length distributions to boost Burstiness CV above 0.65 to disrupt transformer probability models.",
+        "sub": "Cliché Replacements & Burstiness Metrics"
+      },
+      "stage2_fact_citation": {
+        "title": "Stage 2: Fact & Citation Anchoring Audit Report",
+        "desc": "Exhaustively audits all sentences with statistics, percentages, and comparative assertions for explicit citations; validates reference DOIs to detect hallucinated citations.",
+        "sub": "Verifiable Claims & Reference Integrity Breakdown"
       }
     },
     "audit_risk": "AI Residual Risk Score",
@@ -1477,6 +1571,10 @@ const I18N_TRANSLATIONS = {
     "wf_step3_desc": "Drop your Word (.docx) file into the zone above to inject 20-40 random RSID session pools, fractalize text runs, strip ghost CSS, and spoof authentic human editing time.",
     "wf_step4_badge": "Stage 4",
     "wf_step4_title": "Native Application PDF Export",
-    "wf_step4_desc": "Never edit post-typeset compiled PDFs directly. Open the cleaned DOCX in licensed Microsoft Word or OS Print engine and export to PDF for 100% genuine forensic integrity."
+    "wf_step4_desc": "Never edit post-typeset compiled PDFs directly. Open the cleaned DOCX in licensed Microsoft Word or OS Print engine and export to PDF for 100% genuine forensic integrity.",
+    "stat_stage1_title": "Stage 1: Burstiness & Cliché Purge",
+    "stat_stage2_title": "Stage 2: Fact & Citation Audit",
+    "modal_stage1_title": "Stage 1: Lexical De-patterning & Burstiness Reshaper",
+    "modal_stage2_title": "Stage 2: Fact & Citation Anchoring Audit Report"
   }
 };
