@@ -109,7 +109,8 @@ async def api_clean_file(
     author: str = Form("Author"),
     rsid_count: int = Form(25),
     pdf_spoof: str = Form("macOS"),
-    enable_perturb: bool = Form(False)
+    enable_perturb: bool = Form(True),
+    perturb_intensity: float = Form(0.7)
 ):
     filename = file.filename or "document"
     ext = os.path.splitext(filename)[1].lower()
@@ -122,7 +123,9 @@ async def api_clean_file(
         docx_res = sanitize_docx(
             content,
             author_name=author,
-            rsid_session_count=rsid_count
+            rsid_session_count=rsid_count,
+            enable_perturb=enable_perturb,
+            perturb_intensity=perturb_intensity
         )
         mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         file_b64 = base64.b64encode(docx_res.cleaned_bytes).decode("ascii")
@@ -145,7 +148,11 @@ async def api_clean_file(
                 "ghost_styles_removed": docx_res.ghost_styles_removed,
                 "unicode_removed": docx_res.unicode_chars_removed,
                 "human_editing_minutes": docx_res.estimated_human_minutes,
-                "application_spoofed": "Microsoft Office Word 16.0000"
+                "application_spoofed": "Microsoft Office Word 16.0000",
+                "semantic_replacements": docx_res.semantic_replacements,
+                "semantic_reorganized": docx_res.semantic_reorganized,
+                "claude_signatures_purged": docx_res.claude_signatures_purged,
+                "missing_parts_synthesized": docx_res.missing_parts_synthesized
             },
             "details": {
                 "rsid_pool": docx_res.rsid_pool,
@@ -155,7 +162,11 @@ async def api_clean_file(
                 "paragraphs_modified": docx_res.paragraphs_modified,
                 "runs_split": docx_res.runs_split,
                 "estimated_human_minutes": docx_res.estimated_human_minutes,
-                "unicode_removed": docx_res.unicode_chars_removed
+                "unicode_removed": docx_res.unicode_chars_removed,
+                "semantic_replacements": docx_res.semantic_replacements,
+                "semantic_reorganized": docx_res.semantic_reorganized,
+                "claude_signatures_purged": docx_res.claude_signatures_purged,
+                "missing_parts_synthesized": docx_res.missing_parts_synthesized
             }
         }
 

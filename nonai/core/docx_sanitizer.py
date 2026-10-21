@@ -1,6 +1,8 @@
 """
 DOCX Sanitizer and RSID Biomimetic Injector
-Cleans web CSS/HTML artifacts, spoofes metadata, and injects realistic RSID editing histories.
+Cleans web CSS/HTML artifacts, spoofes complete Microsoft Office Word package metadata,
+purges all AI provenance tags (e.g. Claude Docs, Anthropic), synthesizes mandatory Word files
+(fontTable.xml, webSettings.xml, theme1.xml), and applies deep semantic humanization.
 """
 
 import io
@@ -14,6 +16,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from lxml import etree
 
 from nonai.core.unicode_cleaner import clean_unicode
+from nonai.core.semantic_perturb import perturb_text, PerturbResult
 
 # OpenXML Namespaces
 W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -22,6 +25,9 @@ DC_NS = "http://purl.org/dc/elements/1.1/"
 DCTERMS_NS = "http://purl.org/dc/terms/"
 EP_NS = "http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"
 XSI_NS = "http://www.w3.org/2001/XMLSchema-instance"
+CT_NS = "http://schemas.openxmlformats.org/package/2006/content-types"
+PR_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
+A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
 
 NSMAP = {
     "w": W_NS,
@@ -31,6 +37,105 @@ NSMAP = {
     "ep": EP_NS,
     "xsi": XSI_NS,
 }
+
+# Standard XML content for Microsoft Office Word package files
+DEFAULT_FONTTABLE_XML = b"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:fonts xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" mc:Ignorable="w14 w15">
+  <w:font w:name="Calibri">
+    <w:panose1 w:val="020F0502020204030204"/>
+    <w:charset w:val="00"/>
+    <w:family w:val="swiss"/>
+    <w:pitch w:val="variable"/>
+    <w:sig w:usb0="E0002AFF" w:usb1="C000247B" w:usb2="00000009" w:usb3="00000000" w:csb0="000001FF" w:csb1="00000000"/>
+  </w:font>
+  <w:font w:name="Times New Roman">
+    <w:panose1 w:val="02020603050405020304"/>
+    <w:charset w:val="00"/>
+    <w:family w:val="roman"/>
+    <w:pitch w:val="variable"/>
+    <w:sig w:usb0="E0002EFF" w:usb1="C000785B" w:usb2="00000009" w:usb3="00000000" w:csb0="000001FF" w:csb1="00000000"/>
+  </w:font>
+  <w:font w:name="\xe5\xbe\xae\xe8\xbb\x9f\xe6\xad\xa3\xe9\xbb\x91\xe9\xab\x94">
+    <w:altName w:val="Microsoft JhengHei"/>
+    <w:panose1 w:val="020B0604030504040204"/>
+    <w:charset w:val="88"/>
+    <w:family w:val="swiss"/>
+    <w:pitch w:val="variable"/>
+    <w:sig w:usb0="800002BF" w:usb1="3807FCDF" w:usb2="00000010" w:usb3="00000000" w:csb0="00100001" w:csb1="00000000"/>
+  </w:font>
+  <w:font w:name="\xe6\x96\xb0\xe7\xb4\xb0\xe6\x98\x8e\xe9\xab\x94">
+    <w:altName w:val="PMingLiU"/>
+    <w:panose1 w:val="02020500000000000000"/>
+    <w:charset w:val="88"/>
+    <w:family w:val="roman"/>
+    <w:pitch w:val="variable"/>
+    <w:sig w:usb0="800002BF" w:usb1="3807FCDF" w:usb2="00000010" w:usb3="00000000" w:csb0="00100001" w:csb1="00000000"/>
+  </w:font>
+</w:fonts>"""
+
+DEFAULT_WEBSETTINGS_XML = b"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:webSettings xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" mc:Ignorable="w14 w15">
+  <w:optimizeForBrowser/>
+  <w:allowPNG/>
+  <w:relyOnVML/>
+</w:webSettings>"""
+
+DEFAULT_THEME1_XML = b"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Office Theme">
+  <a:themeElements>
+    <a:clrScheme name="Office">
+      <a:dk1><a:sysClr val="windowText" lastClr="000000"/></a:dk1>
+      <a:lt1><a:sysClr val="window" lastClr="FFFFFF"/></a:lt1>
+      <a:dk2><a:srgbClr val="44546A"/></a:dk2>
+      <a:lt2><a:srgbClr val="E7E6E6"/></a:lt2>
+      <a:accent1><a:srgbClr val="4472C4"/></a:accent1>
+      <a:accent2><a:srgbClr val="ED7D31"/></a:accent2>
+      <a:accent3><a:srgbClr val="A5A5A5"/></a:accent3>
+      <a:accent4><a:srgbClr val="FFC000"/></a:accent4>
+      <a:accent5><a:srgbClr val="5B9BD5"/></a:accent5>
+      <a:accent6><a:srgbClr val="70AD47"/></a:accent6>
+      <a:hlink><a:srgbClr val="0563C1"/></a:hlink>
+      <a:folHlink><a:srgbClr val="954F72"/></a:folHlink>
+    </a:clrScheme>
+    <a:fontScheme name="Office">
+      <a:majorFont>
+        <a:latin typeface="Calibri Light" panose="020F0302020204030204"/>
+        <a:ea typeface=""/>
+        <a:cs typeface=""/>
+      </a:majorFont>
+      <a:minorFont>
+        <a:latin typeface="Calibri" panose="020F0502020204030204"/>
+        <a:ea typeface=""/>
+        <a:cs typeface=""/>
+      </a:minorFont>
+    </a:fontScheme>
+    <a:fmtScheme name="Office">
+      <a:fillStyleLst>
+        <a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
+        <a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:lumOff val="20000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:lumOff val="10000"/></a:schemeClr></a:gs></a:gsLst><a:lin ang="16200000" scaled="1"/></a:gradFill>
+        <a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:tint val="40000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:tint val="80000"/></a:schemeClr></a:gs></a:gsLst><a:lin ang="16200000" scaled="1"/></a:gradFill>
+      </a:fillStyleLst>
+      <a:lnStyleLst>
+        <a:ln w="9525" cap="flat" cmpd="s" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln>
+        <a:ln w="25400" cap="flat" cmpd="s" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln>
+        <a:ln w="38100" cap="flat" cmpd="s" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln>
+      </a:lnStyleLst>
+      <a:effectStyleLst>
+        <a:effectStyle><a:effectLst/></a:effectStyle>
+        <a:effectStyle><a:effectLst/></a:effectStyle>
+        <a:effectStyle><a:effectLst/></a:effectStyle>
+      </a:effectStyleLst>
+      <a:bgFillStyleLst>
+        <a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
+        <a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:tint val="40000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:tint val="80000"/></a:schemeClr></a:gs></a:gsLst><a:lin ang="16200000" scaled="1"/></a:gradFill>
+        <a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:tint val="40000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:tint val="80000"/></a:schemeClr></a:gs></a:gsLst><a:lin ang="16200000" scaled="1"/></a:gradFill>
+      </a:bgFillStyleLst>
+    </a:fmtScheme>
+  </a:themeElements>
+  <a:objectDefaults/>
+  <a:extraClrSchemeLst/>
+</a:theme>"""
+
 
 @dataclass
 class DocxSanitizeResult:
@@ -48,28 +153,58 @@ class DocxSanitizeResult:
     ghost_style_items: List[str] = field(default_factory=list)
     split_samples: List[Dict[str, str]] = field(default_factory=list)
     metadata_spoof_details: Dict[str, Any] = field(default_factory=dict)
+    semantic_replacements: int = 0
+    semantic_reorganized: int = 0
+    claude_signatures_purged: int = 0
+    missing_parts_synthesized: List[str] = field(default_factory=list)
 
 
 def _generate_rsid_pool(count: int = 30) -> List[str]:
     """Generate a pool of realistic 8-digit hexadecimal RSID strings."""
     pool = set()
     while len(pool) < count:
-        # RSIDs are 4-byte hex numbers, e.g. "003A12B4"
         val = random.randint(0x00010000, 0x00FFFFFF)
         pool.add(f"{val:08X}")
     return sorted(list(pool))
 
 
-def _clean_text_nodes(root: etree._Element) -> int:
-    """Find all <w:t> elements and strip invisible unicode characters."""
-    total_cleaned = 0
+def _clean_text_nodes_and_perturb(
+    root: etree._Element,
+    enable_perturb: bool = True,
+    intensity: float = 0.7
+) -> Tuple[int, int, int]:
+    """
+    Find all <w:t> elements:
+    1. Strip invisible unicode characters.
+    2. If enable_perturb, apply deep semantic humanization and n-gram disruption.
+    Returns (unicode_cleaned, semantic_replacements, semantic_reorganized).
+    """
+    total_unicode_cleaned = 0
+    total_replacements = 0
+    total_reorganized = 0
+
     for t_elem in root.iter(f"{{{W_NS}}}t"):
         if t_elem.text:
+            # 1. Clean Unicode
             clean_res = clean_unicode(t_elem.text)
-            if clean_res.total_removed > 0 or clean_res.normalized_spaces > 0:
-                t_elem.text = clean_res.cleaned_text
-                total_cleaned += clean_res.total_removed
-    return total_cleaned
+            curr_text = clean_res.cleaned_text
+            total_unicode_cleaned += clean_res.total_removed
+
+            # 2. Semantic perturbation
+            if enable_perturb and len(curr_text.strip()) > 3:
+                p_res = perturb_text(
+                    curr_text,
+                    intensity=intensity,
+                    disrupt_transitions=True,
+                    vary_punctuation=True
+                )
+                curr_text = p_res.perturbed_text
+                total_replacements += p_res.replacements_made
+                total_reorganized += p_res.sentences_reorganized
+
+            t_elem.text = curr_text
+
+    return total_unicode_cleaned, total_replacements, total_reorganized
 
 
 def _strip_ghost_shading_and_fonts(root: etree._Element) -> Tuple[int, List[str]]:
@@ -82,13 +217,12 @@ def _strip_ghost_shading_and_fonts(root: etree._Element) -> Tuple[int, List[str]
     # 1. Remove background shading in runs and paragraphs
     for shd in list(root.iter(f"{{{W_NS}}}shd")):
         fill = shd.get(f"{{{W_NS}}}fill", "").upper()
-        # Web dark/light chat bubbles usually have specific hex fills like F7F7F8, F9F9F9, 2F2F2F
         if fill and fill not in ("AUTO", "NONE", "FFFFFF"):
             parent = shd.getparent()
             if parent is not None:
                 parent.remove(shd)
                 removed_count += 1
-                items.append(f"<w:shd w:fill=\"{fill}\"/> (對話框背景 HEX 色碼)")
+                items.append(f'<w:shd w:fill="{fill}"/> (對話框背景 HEX 色碼)')
 
     # 2. Neutralize AI web fonts (Inter, Söhne, etc.)
     ai_fonts = {"INTER", "SÖHNE", "SOEHNE", "SYSTEM-UI", "ROBOTO", "SEGOE UI"}
@@ -98,7 +232,7 @@ def _strip_ghost_shading_and_fonts(root: etree._Element) -> Tuple[int, List[str]
             if val and val.upper() in ai_fonts:
                 rFonts.attrib.pop(attr, None)
                 removed_count += 1
-                items.append(f"<w:rFonts {attr}=\"{val}\"/> (AI 網頁預設字體)")
+                items.append(f'<w:rFonts {attr}="{val}"/> (AI 網頁預設字體)')
     return removed_count, items
 
 
@@ -110,13 +244,11 @@ def _fragment_and_inject_rsids(
     Fragments robotic long runs into natural chunks and injects RSID tags.
     Returns (paragraphs_modified, runs_split, total_rsids_assigned, split_samples).
     """
-    root_rsid = rsid_pool[0]
     p_count = 0
     runs_split_count = 0
     rsids_assigned = 0
     samples: List[Dict[str, str]] = []
 
-    # Punctuation marks used for natural typing pauses
     pause_punctuation = re.compile(r'([，。、；：！？,\.\?!;:])')
 
     for p in doc_root.iter(f"{{{W_NS}}}p"):
@@ -141,10 +273,8 @@ def _fragment_and_inject_rsids(
             t_elem = r.find(f"{{{W_NS}}}t")
             if t_elem is not None and t_elem.text and len(t_elem.text) > 35:
                 original_sample_text = t_elem.text
-                # Check for punctuation to split
                 parts = pause_punctuation.split(t_elem.text)
                 if len(parts) > 2:
-                    # Regroup into 2 or 3 chunks
                     chunks = []
                     cur = ""
                     for part in parts:
@@ -159,17 +289,14 @@ def _fragment_and_inject_rsids(
                             chunks.append(cur)
 
                     if len(chunks) > 1:
-                        # Keep first chunk in current run
                         t_elem.text = chunks[0]
                         created_sub_rsids = [r_rsid]
-                        # Create subsequent runs
                         r_idx = p.index(r)
                         for i, chunk in enumerate(chunks[1:], start=1):
                             new_r = etree.Element(f"{{{W_NS}}}r")
                             new_r_rsid = random.choice(rsid_pool)
                             created_sub_rsids.append(new_r_rsid)
                             new_r.set(f"{{{W_NS}}}rsidR", new_r_rsid)
-                            # Copy formatting if present
                             rPr = r.find(f"{{{W_NS}}}rPr")
                             if rPr is not None:
                                 new_r.append(etree.fromstring(etree.tostring(rPr)))
@@ -191,11 +318,31 @@ def _fragment_and_inject_rsids(
 
 
 def _update_settings_xml(settings_xml_content: bytes, rsid_pool: List[str]) -> bytes:
-    """Inject <w:rsids> table into word/settings.xml."""
+    """Inject realistic Word settings and <w:rsids> table into word/settings.xml."""
     try:
         root = etree.fromstring(settings_xml_content)
     except Exception:
         root = etree.Element(f"{{{W_NS}}}settings", nsmap={"w": W_NS})
+
+    # Standard Word settings
+    def ensure_setting(tag: str, attrs: Dict[str, str]):
+        elem = root.find(f"{{{W_NS}}}{tag}")
+        if elem is None:
+            elem = etree.SubElement(root, f"{{{W_NS}}}{tag}")
+        for k, v in attrs.items():
+            elem.set(f"{{{W_NS}}}{k}", v)
+
+    ensure_setting("defaultTabStop", {"val": "720"})
+    ensure_setting("characterSpacingControl", {"val": "doNotCompress"})
+
+    compat = root.find(f"{{{W_NS}}}compat")
+    if compat is None:
+        compat = etree.SubElement(root, f"{{{W_NS}}}compat")
+        etree.SubElement(compat, f"{{{W_NS}}}compatSetting", {
+            f"{{{W_NS}}}name": "compatibilityMode",
+            f"{{{W_NS}}}uri": "http://schemas.microsoft.com/office/word",
+            f"{{{W_NS}}}val": "15"
+        })
 
     # Find or create w:rsids
     rsids_elem = root.find(f"{{{W_NS}}}rsids")
@@ -219,29 +366,40 @@ def _update_settings_xml(settings_xml_content: bytes, rsid_pool: List[str]) -> b
 def _update_app_xml(
     app_xml_content: Optional[bytes],
     total_words: int,
+    total_characters: int,
+    total_paragraphs: int,
     total_minutes: int,
     revision: int
 ) -> bytes:
-    """Rewrite docProps/app.xml to look like genuine Microsoft Office Word."""
-    if app_xml_content:
-        try:
-            root = etree.fromstring(app_xml_content)
-        except Exception:
-            root = etree.Element(f"{{{EP_NS}}}Properties", nsmap={"ep": EP_NS})
-    else:
-        root = etree.Element(f"{{{EP_NS}}}Properties", nsmap={"ep": EP_NS})
+    """Rewrite docProps/app.xml with complete genuine Microsoft Office Word properties."""
+    root = etree.Element(f"{{{EP_NS}}}Properties", nsmap={"ep": EP_NS})
 
-    def set_or_create(tag: str, val: str):
-        elem = root.find(f"{{{EP_NS}}}{tag}")
-        if elem is None:
-            elem = etree.SubElement(root, f"{{{EP_NS}}}{tag}")
-        elem.text = str(val)
+    pages = max(1, total_characters // 1500 + 1)
+    lines = max(1, total_characters // 38 + 1)
+    chars_with_spaces = max(1, int(total_characters * 1.15))
 
-    set_or_create("Application", "Microsoft Office Word")
-    set_or_create("AppVersion", "16.0000")
-    set_or_create("TotalTime", str(total_minutes))
-    set_or_create("Words", str(max(1, total_words)))
-    set_or_create("DocSecurity", "0")
+    props = [
+        ("Template", "Normal.dotm"),
+        ("TotalTime", str(total_minutes)),
+        ("Pages", str(pages)),
+        ("Words", str(max(1, total_words))),
+        ("Characters", str(max(1, total_characters))),
+        ("Application", "Microsoft Office Word"),
+        ("DocSecurity", "0"),
+        ("Lines", str(lines)),
+        ("Paragraphs", str(max(1, total_paragraphs))),
+        ("ScaleCrop", "false"),
+        ("Company", ""),
+        ("LinksUpToDate", "false"),
+        ("CharactersWithSpaces", str(chars_with_spaces)),
+        ("SharedDoc", "false"),
+        ("HyperlinksChanged", "false"),
+        ("AppVersion", "16.0000"),
+    ]
+
+    for tag, val in props:
+        elem = etree.SubElement(root, f"{{{EP_NS}}}{tag}")
+        elem.text = val
 
     return etree.tostring(root, xml_declaration=True, encoding="utf-8", standalone="yes")
 
@@ -251,8 +409,15 @@ def _update_core_xml(
     author_name: str,
     revision: int,
     total_minutes: int
-) -> bytes:
-    """Rewrite docProps/core.xml with human editing timestamps and author name."""
+) -> Tuple[bytes, int]:
+    """
+    Rewrite docProps/core.xml:
+    1. EXHAUSTIVELY PURGE <dc:description> (smoking gun for Claude Docs).
+    2. Sanitize <dc:title>, <dc:subject>, <cp:keywords>, <cp:category>.
+    3. Falsify human author name and editing timestamps.
+    Returns (sanitized_bytes, claude_signatures_purged).
+    """
+    purged_count = 0
     if core_xml_content:
         try:
             root = etree.fromstring(core_xml_content)
@@ -262,8 +427,29 @@ def _update_core_xml(
         root = etree.Element(f"{{{CP_NS}}}coreProperties", nsmap=NSMAP)
 
     now = datetime.now(timezone.utc)
-    created_time = now - timedelta(minutes=total_minutes + random.randint(15, 60))
-    modified_time = now - timedelta(minutes=random.randint(2, 10))
+    created_time = now - timedelta(minutes=total_minutes + random.randint(25, 120))
+    modified_time = now - timedelta(minutes=random.randint(2, 12))
+
+    # 1. PURGE <dc:description> completely!
+    desc_elem = root.find(f"{{{DC_NS}}}description")
+    if desc_elem is not None:
+        if desc_elem.text and any(k in desc_elem.text.lower() for k in ["claude", "anthropic", "gpt", "node/"]):
+            purged_count += 1
+        root.remove(desc_elem)
+
+    # 2. Clear or sanitize suspicious metadata fields
+    for tag, ns in [("subject", DC_NS), ("keywords", CP_NS), ("category", CP_NS), ("contentStatus", CP_NS)]:
+        elem = root.find(f"{{{ns}}}{tag}")
+        if elem is not None:
+            root.remove(elem)
+
+    # 3. Sanitize title if needed
+    title_elem = root.find(f"{{{DC_NS}}}title")
+    if title_elem is not None and title_elem.text:
+        cleaned_title = re.sub(r'(claude\s*docs?|anthropic|chatgpt|openai|node/[a-f0-9-]+)', '', title_elem.text, flags=re.IGNORECASE).strip()
+        if cleaned_title != title_elem.text:
+            purged_count += 1
+            title_elem.text = cleaned_title
 
     def set_or_create_child(parent, ns, tag, val, attrs=None):
         elem = parent.find(f"{{{ns}}}{tag}")
@@ -288,6 +474,78 @@ def _update_core_xml(
         {f"{{{XSI_NS}}}type": "dcterms:W3CDTF"}
     )
 
+    return etree.tostring(root, xml_declaration=True, encoding="utf-8", standalone="yes"), purged_count
+
+
+def _ensure_content_types(content_types_bytes: bytes, added_parts: List[str]) -> bytes:
+    """Register all package parts in [Content_Types].xml."""
+    try:
+        root = etree.fromstring(content_types_bytes)
+    except Exception:
+        root = etree.Element(f"{{{CT_NS}}}Types", nsmap={None: CT_NS})
+
+    existing_overrides = {elem.get("PartName") for elem in root.findall(f"{{{CT_NS}}}Override")}
+
+    part_type_map = {
+        "/word/fontTable.xml": "application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml",
+        "/word/webSettings.xml": "application/vnd.openxmlformats-officedocument.wordprocessingml.webSettings+xml",
+        "/word/theme/theme1.xml": "application/vnd.openxmlformats-officedocument.theme+xml",
+        "/word/settings.xml": "application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml",
+        "/word/styles.xml": "application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml",
+        "/word/document.xml": "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml",
+        "/docProps/core.xml": "application/vnd.openxmlformats-package.core-properties+xml",
+        "/docProps/app.xml": "application/vnd.openxmlformats-officedocument.extended-properties+xml",
+    }
+
+    # Ensure required overrides
+    for part_name, content_type in part_type_map.items():
+        if part_name not in existing_overrides:
+            override = etree.SubElement(root, f"{{{CT_NS}}}Override")
+            override.set("PartName", part_name)
+            override.set("ContentType", content_type)
+
+    # Remove deleted customXml or custom.xml overrides
+    for elem in list(root.findall(f"{{{CT_NS}}}Override")):
+        pname = elem.get("PartName", "").lower()
+        if "customxml" in pname or "docprops/custom.xml" in pname:
+            root.remove(elem)
+
+    return etree.tostring(root, xml_declaration=True, encoding="utf-8", standalone="yes")
+
+
+def _ensure_document_relationships(rels_bytes: bytes) -> bytes:
+    """Ensure word/_rels/document.xml.rels links to fontTable, webSettings, theme, settings, and styles."""
+    try:
+        root = etree.fromstring(rels_bytes)
+    except Exception:
+        root = etree.Element(f"{{{PR_NS}}}Relationships", nsmap={None: PR_NS})
+
+    existing_targets = {elem.get("Target") for elem in root.findall(f"{{{PR_NS}}}Relationship")}
+    
+    # Find maximum existing rId index
+    max_id = 0
+    for elem in root.findall(f"{{{PR_NS}}}Relationship"):
+        r_id = elem.get("Id", "")
+        m = re.match(r"rId(\d+)", r_id)
+        if m:
+            max_id = max(max_id, int(m.group(1)))
+
+    required_rels = [
+        ("styles.xml", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"),
+        ("settings.xml", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings"),
+        ("webSettings.xml", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings"),
+        ("fontTable.xml", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable"),
+        ("theme/theme1.xml", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme"),
+    ]
+
+    for target, rel_type in required_rels:
+        if target not in existing_targets:
+            max_id += 1
+            rel_elem = etree.SubElement(root, f"{{{PR_NS}}}Relationship")
+            rel_elem.set("Id", f"rId{max_id}")
+            rel_elem.set("Type", rel_type)
+            rel_elem.set("Target", target)
+
     return etree.tostring(root, xml_declaration=True, encoding="utf-8", standalone="yes")
 
 
@@ -295,15 +553,18 @@ def sanitize_docx(
     file_bytes: bytes,
     author_name: str = "Author",
     rsid_session_count: int = 25,
-    simulate_typing_speed_wpm: int = 35
+    simulate_typing_speed_wpm: int = 35,
+    enable_perturb: bool = True,
+    perturb_intensity: float = 0.7
 ) -> DocxSanitizeResult:
     """
     Sanitize a DOCX file:
-    1. Strip invisible unicode from all text nodes.
-    2. Remove web CSS/HTML shading artifacts and AI font tags.
-    3. Generate and inject human-like RSID session history into settings.xml & document.xml.
-    4. Fragment runs to simulate human keystrokes & pauses.
-    5. Falsify app.xml and core.xml metadata to match Microsoft Office Word.
+    1. EXHAUSTIVELY PURGE all AI provenance metadata (<dc:description> Claude Docs tags, customXml).
+    2. Synthesize missing Microsoft Word package files (fontTable.xml, webSettings.xml, theme1.xml).
+    3. Falsify complete Microsoft Office Word 16.0000 extended & core properties.
+    4. Strip invisible unicode characters and web CSS ghost shading.
+    5. Perform deep semantic perturbation & academic de-patterning to defeat transformer classifiers.
+    6. Inject realistic human RSID revision history and keystroke run fragmentation.
     """
     in_zip = zipfile.ZipFile(io.BytesIO(file_bytes), "r")
     out_buffer = io.BytesIO()
@@ -323,8 +584,47 @@ def sanitize_docx(
         except Exception:
             pass
 
-    # Process word/document.xml
+    # 1. Purge customXml and custom.xml artifacts
+    claude_purged_count = 0
+    to_delete = []
+    for fname in xml_files:
+        if fname.lower().startswith("customxml/") or fname.lower() == "docprops/custom.xml":
+            to_delete.append(fname)
+            claude_purged_count += 1
+    for fname in to_delete:
+        del xml_files[fname]
+
+    # Clean custom relationships from _rels/.rels
+    if "_rels/.rels" in xml_files:
+        try:
+            r_root = etree.fromstring(xml_files["_rels/.rels"])
+            for rel in list(r_root.findall(f"{{{PR_NS}}}Relationship")):
+                t = rel.get("Target", "").lower()
+                if "custom" in t:
+                    r_root.remove(rel)
+                    claude_purged_count += 1
+            xml_files["_rels/.rels"] = etree.tostring(r_root, xml_declaration=True, encoding="utf-8", standalone="yes")
+        except Exception:
+            pass
+
+    # 2. Synthesize missing genuine Microsoft Word package files
+    missing_synthesized = []
+    if "word/fontTable.xml" not in xml_files:
+        xml_files["word/fontTable.xml"] = DEFAULT_FONTTABLE_XML
+        missing_synthesized.append("word/fontTable.xml")
+
+    if "word/webSettings.xml" not in xml_files:
+        xml_files["word/webSettings.xml"] = DEFAULT_WEBSETTINGS_XML
+        missing_synthesized.append("word/webSettings.xml")
+
+    if "word/theme/theme1.xml" not in xml_files:
+        xml_files["word/theme/theme1.xml"] = DEFAULT_THEME1_XML
+        missing_synthesized.append("word/theme/theme1.xml")
+
+    # 3. Process word/document.xml (Text Humanization & RSID Injection)
     unicode_removed = 0
+    semantic_replacements = 0
+    semantic_reorganized = 0
     ghost_styles_removed = 0
     ghost_style_items = []
     p_modified = 0
@@ -332,47 +632,86 @@ def sanitize_docx(
     total_rsids_injected = 0
     split_samples = []
     total_words = 100
+    total_characters = 500
+    total_paragraphs = 1
 
     rsid_pool = _generate_rsid_pool(rsid_session_count)
 
     if "word/document.xml" in xml_files:
         doc_root = etree.fromstring(xml_files["word/document.xml"])
-        # 1. Clean unicode
-        unicode_removed = _clean_text_nodes(doc_root)
-        # 2. Strip shading & ghost styles
+
+        # 3A. Clean unicode & apply deep semantic perturbation to defeat neural classifiers
+        unicode_removed, semantic_replacements, semantic_reorganized = _clean_text_nodes_and_perturb(
+            doc_root,
+            enable_perturb=enable_perturb,
+            intensity=perturb_intensity
+        )
+
+        # 3B. Strip shading & ghost styles
         ghost_styles_removed, ghost_style_items = _strip_ghost_shading_and_fonts(doc_root)
-        # 3. Fragment and inject RSIDs
+
+        # 3C. Fragment runs and inject RSIDs
         p_modified, runs_split, total_rsids_injected, split_samples = _fragment_and_inject_rsids(doc_root, rsid_pool)
-        
-        # Approximate word count
+
+        # Calculate word and character metrics
         all_text = "".join(doc_root.itertext())
+        total_characters = len(all_text)
+        total_paragraphs = p_modified
         total_words = len(all_text.split()) if " " in all_text else len(all_text)
 
         xml_files["word/document.xml"] = etree.tostring(
             doc_root, xml_declaration=True, encoding="utf-8", standalone="yes"
         )
 
-    # Calculate human editing time (words / wpm + random thinking pauses)
-    calc_minutes = max(18, int(total_words / max(10, simulate_typing_speed_wpm)) + random.randint(15, 60))
-    revision_count = random.randint(8, 28)
+    # 4. Process word/_rels/document.xml.rels
+    rels_content = xml_files.get("word/_rels/document.xml.rels", b"")
+    xml_files["word/_rels/document.xml.rels"] = _ensure_document_relationships(rels_content)
 
-    # Process word/settings.xml
+    # 5. Process [Content_Types].xml
+    ct_content = xml_files.get("[Content_Types].xml", b"")
+    xml_files["[Content_Types].xml"] = _ensure_content_types(ct_content, missing_synthesized)
+
+    # Calculate realistic human typing & editing time
+    calc_minutes = max(28, int(total_words / max(10, simulate_typing_speed_wpm)) + random.randint(25, 90))
+    revision_count = random.randint(14, 38)
+
+    # 6. Process word/settings.xml
     settings_content = xml_files.get("word/settings.xml", b"")
     xml_files["word/settings.xml"] = _update_settings_xml(settings_content, rsid_pool)
 
-    # Process docProps/app.xml
+    # 7. Process docProps/app.xml
     app_content = xml_files.get("docProps/app.xml")
     xml_files["docProps/app.xml"] = _update_app_xml(
-        app_content, total_words, calc_minutes, revision_count
+        app_content, total_words, total_characters, total_paragraphs, calc_minutes, revision_count
     )
 
-    # Process docProps/core.xml
+    # 8. Process docProps/core.xml (Smoking Gun Purge)
     core_content = xml_files.get("docProps/core.xml")
-    xml_files["docProps/core.xml"] = _update_core_xml(
+    sanitized_core, c_purged = _update_core_xml(
         core_content, author_name, revision_count, calc_minutes
     )
+    xml_files["docProps/core.xml"] = sanitized_core
+    claude_purged_count += c_purged
 
-    # Write all files back to out_zip
+    # 9. Global AI String Purge across all text/XML parts
+    ai_patterns = [
+        re.compile(rb'Claude\s*Docs(\s*node/[a-f0-9-]+@\d+\s*docx-w\d+)?', re.IGNORECASE),
+        re.compile(rb'Claude', re.IGNORECASE),
+        re.compile(rb'Anthropic', re.IGNORECASE),
+        re.compile(rb'python-docx', re.IGNORECASE),
+        re.compile(rb'docx-w\d+', re.IGNORECASE),
+    ]
+
+    for fname, content in list(xml_files.items()):
+        if fname.endswith(".xml") or fname.endswith(".rels"):
+            original_len = len(content)
+            for pat in ai_patterns:
+                content = pat.sub(b'', content)
+            if len(content) != original_len:
+                claude_purged_count += 1
+                xml_files[fname] = content
+
+    # Write all sanitized files into the output zip
     for filename, content in xml_files.items():
         out_zip.writestr(filename, content)
 
@@ -380,16 +719,18 @@ def sanitize_docx(
     in_zip.close()
 
     now = datetime.now(timezone.utc)
-    created_time = now - timedelta(minutes=calc_minutes + 30)
+    created_time = now - timedelta(minutes=calc_minutes + 45)
 
     metadata_spoof_details = {
         "application": "Microsoft Office Word",
         "app_version": "16.0000",
+        "template": "Normal.dotm",
         "total_time_minutes": calc_minutes,
         "revision": revision_count,
         "author": author_name,
         "created_time": created_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
-        "modified_time": now.strftime("%Y-%m-%d %H:%M:%S UTC")
+        "modified_time": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "missing_parts_synthesized": missing_synthesized
     }
 
     return DocxSanitizeResult(
@@ -406,5 +747,9 @@ def sanitize_docx(
         rsid_pool=rsid_pool,
         ghost_style_items=ghost_style_items,
         split_samples=split_samples,
-        metadata_spoof_details=metadata_spoof_details
+        metadata_spoof_details=metadata_spoof_details,
+        semantic_replacements=semantic_replacements,
+        semantic_reorganized=semantic_reorganized,
+        claude_signatures_purged=claude_purged_count,
+        missing_parts_synthesized=missing_synthesized
     )

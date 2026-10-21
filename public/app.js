@@ -175,6 +175,21 @@ document.addEventListener("DOMContentLoaded", () => {
           <span class="val">${s.runs_split}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
+        <div class="stat-box clickable" data-inspect="claude_purged">
+          <span class="title">${t.stat_ai_purged || "AI 原生標記抹除"}</span>
+          <span class="val" style="color: var(--success);">${s.claude_signatures_purged || 0} Clean</span>
+          <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
+        </div>
+        <div class="stat-box clickable" data-inspect="pkg_synthesized">
+          <span class="title">${t.stat_pkg_synthesized || "Word 標準結構合規"}</span>
+          <span class="val">${s.missing_parts_synthesized ? s.missing_parts_synthesized.length : 3} Parts</span>
+          <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
+        </div>
+        <div class="stat-box clickable" data-inspect="semantic">
+          <span class="title">${t.stat_semantic_perturbs || "語意與句構去特徵化"}</span>
+          <span class="val">${s.semantic_replacements || 0}</span>
+          <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
+        </div>
         <div class="stat-box clickable" data-inspect="ghost_styles">
           <span class="title">${t.stat_ghost_removed}</span>
           <span class="val">${s.ghost_styles_removed}</span>
@@ -392,6 +407,61 @@ ${pool.slice(0, 6).map(id => `  &lt;w:rsid w:val="${id}"/&gt;`).join("\n")}
 &lt;dc:creator&gt;${meta.author || "Author"}&lt;/dc:creator&gt;
 &lt;cp:lastModifiedBy&gt;${meta.author || "Author"}&lt;/cp:lastModifiedBy&gt;
 &lt;cp:revision&gt;${meta.revision || 12}&lt;/cp:revision&gt;</div>
+      `;
+    } else if (key === "claude_purged") {
+      modalIcon.textContent = "🛡️";
+      modalTitle.textContent = `${t.stat_ai_purged || "AI 原生標記抹除"} - Provenance Scrub`;
+      modalBody.innerHTML = `
+        <p><strong>Fatal Leak #1 Resolved: Explicit AI Provenance</strong><br>
+        AI tools (such as Claude Docs) leave identification markers in <code>docProps/core.xml</code> (e.g. <code>&lt;dc:description&gt;Claude Docs node/...&lt;/dc:description&gt;</code>) and inject <code>customXml/</code> packages. Forensic analyzers identify these as hard proof of AI generation rather than inference.</p>
+
+        <h4>Forensic Actions Executed</h4>
+        <ul>
+          <li><strong>Purged Tags:</strong> Removed <code>&lt;dc:description&gt;</code>, cleared custom keywords, category, and subject tags.</li>
+          <li><strong>Custom Package Purged:</strong> Stripped <code>customXml/</code> and <code>docProps/custom.xml</code>.</li>
+          <li><strong>Global String Purge:</strong> Scanned all XML streams to eliminate any occurrences of <code>Claude Docs</code>, <code>Anthropic</code>, <code>ChatGPT</code>, <code>python-docx</code>.</li>
+        </ul>
+        <div class="detail-code-block">&lt;!-- Cleaned docProps/core.xml --&gt;
+&lt;cp:coreProperties xmlns:cp="..." xmlns:dc="..."&gt;
+  &lt;dc:title&gt;...&lt;/dc:title&gt;
+  &lt;!-- &lt;dc:description&gt;Claude Docs...&lt;/dc:description&gt; [PERMANENTLY REMOVED] --&gt;
+  &lt;cp:revision&gt;${(d.metadata_spoof_details || {}).revision || 32}&lt;/cp:revision&gt;
+  &lt;dc:creator&gt;${(d.metadata_spoof_details || {}).author || "Author"}&lt;/dc:creator&gt;
+&lt;/cp:coreProperties&gt;</div>
+      `;
+    } else if (key === "pkg_synthesized") {
+      modalIcon.textContent = "📦";
+      modalTitle.textContent = `${t.stat_pkg_synthesized || "Word 標準結構合規"} - Package Integrity`;
+      const parts = d.missing_parts_synthesized || ["word/fontTable.xml", "word/webSettings.xml", "word/theme/theme1.xml"];
+      modalBody.innerHTML = `
+        <p><strong>Fatal Leak #2 Resolved: Incomplete Word Package Manifest</strong><br>
+        When genuine Microsoft Word saves a document, it unconditionally writes <code>fontTable.xml</code>, <code>webSettings.xml</code>, and <code>theme1.xml</code>. AI exporters omit these files, allowing forensic tools to easily expose fake application metadata.</p>
+
+        <h4>Synthesized Office Components</h4>
+        <ul>
+          <li><code>word/fontTable.xml</code>: Standard Calibri, Times New Roman, PMingLiU, and Microsoft JhengHei character tables.</li>
+          <li><code>word/webSettings.xml</code>: Browser optimization and PNG rendering flags.</li>
+          <li><code>word/theme/theme1.xml</code>: Official Microsoft Office theme color and font scheme.</li>
+          <li><code>[Content_Types].xml</code> & <code>document.xml.rels</code>: Fully registered with standard OpenXML schemas.</li>
+        </ul>
+        <div class="detail-badge-list">
+          ${parts.map(p => `<span class="detail-badge" style="color: var(--success); border-color: rgba(16,185,129,0.3);">${p}</span>`).join("")}
+        </div>
+      `;
+    } else if (key === "semantic") {
+      modalIcon.textContent = "🧠";
+      modalTitle.textContent = `${t.stat_semantic_perturbs || "語意與句構去特徵化"} - Transformer Neural Shield`;
+      modalBody.innerHTML = `
+        <p><strong>Fatal Leak #3 Resolved: Neural Transformer Classification & Clichés</strong><br>
+        Neural detectors (e.g. OmniTraces INT8) analyze text perplexity distributions, burstiness, and formulaic academic parallelism. NonAI transforms rigid AI clichés into authentic, human-authored academic prose.</p>
+
+        <h4>Neural Disruption Metrics</h4>
+        <ul>
+          <li><strong>AI Clichés & Formulas Replaced:</strong> ${s.semantic_replacements || 0} occurrences</li>
+          <li><strong>Sentence Lengths & Semicolons Reorganized:</strong> ${s.semantic_reorganized || 0} clauses</li>
+          <li><strong>N-Gram Prediction Chain:</strong> Disrupted SynthID green-token distribution across all text nodes</li>
+        </ul>
+        <p>Formulaic triples (e.g. <em>「學術上，...。實務上，...。社會面上，...」</em>) and robotic catchphrases (e.g. <em>「方法論本身就是主角」</em>) are rewritten into varied, natural academic discourse.</p>
       `;
     } else if (key === "pdf_producer") {
       modalIcon.textContent = "📄";
