@@ -5,6 +5,7 @@ FastAPI backend providing file processing, text sanitization, and clipboard watc
 
 import base64
 import io
+import json
 import os
 import uuid
 import tempfile
@@ -25,11 +26,19 @@ from nonai.clipboard.watcher import ClipboardWatcher, ClipboardEvent
 
 app = FastAPI(title="NonAI - AI Fingerprint Removal Platform")
 
+# Version metadata
+VERSION_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "version.json")
+try:
+    with open(VERSION_FILE, "r", encoding="utf-8") as vf:
+        VERSION_DATA = json.load(vf)
+except Exception:
+    VERSION_DATA = {"version": "1.1.0", "release_date": "2026-10-21", "bump_level": "minor"}
+
 # In-memory storage for processed downloadable files
 DOWNLOAD_CACHE = {}
 
 # Global clipboard watcher instance - Default to active state
-watcher_instance = ClipboardWatcher(poll_interval=0.5)
+watcher_instance = ClipboardWatcher(poll_interval=0.5, enable_perturbation=True)
 try:
     watcher_instance.start()
 except Exception:
@@ -37,13 +46,17 @@ except Exception:
 
 class CleanTextRequest(BaseModel):
     text: str
-    enable_perturb: bool = False
-    perturb_intensity: float = 0.4
+    enable_perturb: bool = True
+    perturb_intensity: float = 0.65
     de_perfectionize_md: bool = True
 
 class ToggleWatcherRequest(BaseModel):
     active: bool
-    enable_perturb: bool = False
+    enable_perturb: bool = True
+
+@app.get("/api/version")
+async def api_get_version():
+    return VERSION_DATA
 
 @app.post("/api/clean-text")
 async def api_clean_text(req: CleanTextRequest):
@@ -196,7 +209,8 @@ async def api_clean_file(
                 "spoofed_producer": pdf_res.spoofed_producer,
                 "spoofed_creator": pdf_res.spoofed_creator,
                 "xmp_cleaned": pdf_res.xmp_cleaned,
-                "pages": pdf_res.total_pages
+                "pages": pdf_res.total_pages,
+                "ai_signatures_purged": pdf_res.ai_signatures_purged
             },
             "details": {
                 "original_producer": pdf_res.original_producer,
@@ -205,16 +219,20 @@ async def api_clean_file(
                 "spoofed_creator": pdf_res.spoofed_creator,
                 "xmp_cleaned": pdf_res.xmp_cleaned,
                 "pages": pdf_res.total_pages,
+                "ai_signatures_purged": pdf_res.ai_signatures_purged,
+                "metadata_fields_cleaned": pdf_res.metadata_fields_cleaned,
                 "original_metadata": pdf_res.original_metadata
             }
         }
 
     elif ext in (".md", ".markdown"):
         text = content.decode("utf-8", errors="ignore")
-        md_res = clean_markdown(text)
+        md_res = clean_markdown(
+            text,
+            enable_perturb=enable_perturb,
+            perturb_intensity=perturb_intensity
+        )
         final_text = md_res.cleaned_text
-        if enable_perturb:
-            final_text = perturb_text(final_text, intensity=0.4).perturbed_text
 
         cleaned_bytes = final_text.encode("utf-8")
         mime = "text/markdown"
@@ -235,11 +253,17 @@ async def api_clean_file(
                 "unicode_removed": md_res.unicode_chars_removed,
                 "tables_de_perfectionized": md_res.tables_de_perfectionized,
                 "lists_varied": md_res.lists_varied,
+                "ai_bookends_removed": md_res.ai_bookends_removed,
+                "semantic_replacements": md_res.semantic_replacements,
+                "semantic_reorganized": md_res.semantic_reorganized
             },
             "details": {
                 "unicode_removed": md_res.unicode_chars_removed,
                 "tables_de_perfectionized": md_res.tables_de_perfectionized,
                 "lists_varied": md_res.lists_varied,
+                "ai_bookends_removed": md_res.ai_bookends_removed,
+                "semantic_replacements": md_res.semantic_replacements,
+                "semantic_reorganized": md_res.semantic_reorganized
             }
         }
 
@@ -248,8 +272,13 @@ async def api_clean_file(
         text = content.decode("utf-8", errors="ignore")
         u_res = clean_unicode(text)
         final_text = u_res.cleaned_text
+        p_replacements = 0
+        p_reorganized = 0
         if enable_perturb:
-            final_text = perturb_text(final_text, intensity=0.4).perturbed_text
+            p_res = perturb_text(final_text, intensity=perturb_intensity)
+            final_text = p_res.perturbed_text
+            p_replacements = p_res.replacements_made
+            p_reorganized = p_res.sentences_reorganized
 
         cleaned_bytes = final_text.encode("utf-8")
         mime = "text/plain"
@@ -263,16 +292,21 @@ async def api_clean_file(
         return {
             "file_id": file_id,
             "filename": cleaned_filename,
-            "file_type": "txt",
+            "file_type": "text",
             "file_b64": file_b64,
             "mime": mime,
             "stats": {
                 "unicode_removed": u_res.total_removed,
                 "spaces_normalized": u_res.normalized_spaces,
+                "semantic_replacements": p_replacements,
+                "semantic_reorganized": p_reorganized
             },
             "details": {
                 "unicode_removed": u_res.total_removed,
                 "spaces_normalized": u_res.normalized_spaces,
+                "char_counts": u_res.char_counts,
+                "semantic_replacements": p_replacements,
+                "semantic_reorganized": p_reorganized
             }
         }
 

@@ -108,11 +108,41 @@ body {
   transform: rotate(4deg) scale(1.05);
 }
 
+.brand-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .brand h1 {
   margin: 0;
   font-size: clamp(1.4rem, 1.1rem + 1.2vw, 1.9rem);
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+.version-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.32);
+  line-height: 1.2;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.version-badge:hover {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: rgba(56, 189, 248, 0.55);
+  transform: translateY(-1px);
 }
 
 .subtitle {

@@ -707,6 +707,24 @@ ${pool.slice(0, 6).map(id => `  &lt;w:rsid w:val="${id}"/&gt;`).join("\n")}
   // Guarantee Watcher Active State on Page Load (Requirement 4)
   toggleWatcher(true);
 
+  // Sync App Version Badge from API
+  async function syncAppVersion() {
+    try {
+      const resp = await fetch("/api/version");
+      if (resp.ok) {
+        const vdata = await resp.json();
+        const badge = document.getElementById("appVersionBadge");
+        if (badge && vdata.version) {
+          badge.textContent = `v${vdata.version}`;
+          badge.title = `NonAI v${vdata.version} (${vdata.release_date || ""}) - ${vdata.bump_level || "release"}`;
+        }
+      }
+    } catch {
+      // fallback to static badge in HTML
+    }
+  }
+  syncAppVersion();
+
   // Poll status every 2 seconds
   pollWatcherStatus();
   setInterval(pollWatcherStatus, 2000);
