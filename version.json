@@ -1,7 +1,7 @@
 {
-  "version": "1.1.5",
+  "version": "1.1.6",
   "release_date": "2026-10-22",
   "bump_level": "patch",
-  "description": "Update exact absolute directory path to /Volumes/Mobil/GitMobil/NonAI in terminal copy commands",
-  "timestamp": "2026-10-22T00:48:31.122296"
+  "description": "Cross-format forensic hardening (DOCX/PDF/MD/TXT), Claude Docs provenance eradication, Microsoft Word package synthesis, and neural transformer de-patterning.",
+  "timestamp": "2026-10-22T00:55:24.436633"
 }
