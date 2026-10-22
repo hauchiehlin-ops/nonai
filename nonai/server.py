@@ -22,7 +22,7 @@ from nonai.core.pdf_sanitizer import sanitize_pdf
 from nonai.core.markdown_cleaner import clean_markdown
 from nonai.core.semantic_perturb import perturb_text
 from nonai.core.semantic_restructure import restructure_semantics_and_burstiness
-from nonai.core.fact_citation_auditor import audit_fact_citations
+from nonai.core.fact_citation_auditor import audit_fact_citations, bind_citations_and_hedge
 from nonai.core.detector_audit import audit_text_fingerprints
 from nonai.clipboard.watcher import ClipboardWatcher, ClipboardEvent
 from pypdf import PdfReader
@@ -52,6 +52,8 @@ class CleanTextRequest(BaseModel):
     enable_perturb: bool = True
     perturb_intensity: float = 0.65
     de_perfectionize_md: bool = True
+    auto_bind_citations: bool = False
+    hedge_isolated_claims: bool = False
 
 class ToggleWatcherRequest(BaseModel):
     active: bool
@@ -85,17 +87,33 @@ async def api_clean_text(req: CleanTextRequest):
     p_res = None
     stage1_metrics = None
     if req.enable_perturb:
-        s_res = restructure_semantics_and_burstiness(cleaned, target_cv=0.65)
+        s_res = restructure_semantics_and_burstiness(
+            cleaned,
+            target_cv=0.70,
+            enable_high_risk_residue_dissolve=True,
+            enable_entity_diversity=True
+        )
         cleaned = s_res.cleaned_text
         stage1_metrics = {
             "original_cv": s_res.metrics.original_cv,
             "reshaped_cv": s_res.metrics.reshaped_cv,
             "burstiness_boost_percent": s_res.metrics.burstiness_boost_percent,
             "cliches_purged_count": s_res.metrics.cliches_purged_count,
+            "high_risk_residues_dissolved": s_res.metrics.high_risk_residues_dissolved,
+            "entity_diversity_replacements_count": s_res.metrics.entity_diversity_replacements_count,
+            "entity_diversity_details": s_res.metrics.entity_diversity_details[:15],
             "cliche_replacements": s_res.metrics.cliche_replacements[:15]
         }
         p_res = perturb_text(cleaned, intensity=req.perturb_intensity)
         cleaned = p_res.perturbed_text
+
+    # 4b. Optional Citation Proximity Binding & Claim Hedging
+    if req.auto_bind_citations or req.hedge_isolated_claims:
+        cleaned, bound_c, hedged_c = bind_citations_and_hedge(
+            cleaned,
+            auto_bind_proximate=req.auto_bind_citations,
+            hedge_isolated_claims=req.hedge_isolated_claims
+        )
 
     # 5. Stage 2 Fact & Citation Audit
     fact_audit = audit_fact_citations(cleaned)
@@ -113,7 +131,9 @@ async def api_clean_text(req: CleanTextRequest):
                 "claim_type": c.claim_type,
                 "matched_clue": c.matched_clue,
                 "risk_level": c.risk_level,
-                "recommendation": c.recommendation
+                "recommendation": c.recommendation,
+                "suggested_citation": c.suggested_citation,
+                "proximate_citation_found": c.proximate_citation_found
             } for c in fact_audit.unanchored_claims[:20]
         ],
         "total_references_detected": fact_audit.total_references_detected,

@@ -198,11 +198,20 @@ def _clean_text_nodes_and_perturb(
 
             # 2. Stage 1: Semantic restructure & burstiness
             if enable_perturb and len(curr_text.strip()) > 3:
-                # First run semantic restructurer (cliché purge + burstiness)
-                s_res = restructure_semantics_and_burstiness(curr_text, target_cv=0.65)
+                # First run semantic restructurer (cliché purge + entity diversity + high-risk residue dissolve + burstiness)
+                s_res = restructure_semantics_and_burstiness(
+                    curr_text,
+                    target_cv=0.70,
+                    enable_high_risk_residue_dissolve=True,
+                    enable_entity_diversity=True
+                )
                 curr_text = s_res.cleaned_text
-                total_replacements += s_res.metrics.cliches_purged_count
-                total_reorganized += s_res.metrics.rules_of_three_disrupted + s_res.metrics.short_punchy_sentences_created
+                total_replacements += s_res.metrics.cliches_purged_count + s_res.metrics.entity_diversity_replacements_count
+                total_reorganized += (
+                    s_res.metrics.rules_of_three_disrupted +
+                    s_res.metrics.short_punchy_sentences_created +
+                    s_res.metrics.high_risk_residues_dissolved
+                )
 
                 # Next run fine-grained perturbations
                 p_res = perturb_text(
@@ -237,7 +246,9 @@ def _clean_text_nodes_and_perturb(
                 "claim_type": c.claim_type,
                 "matched_clue": c.matched_clue,
                 "risk_level": c.risk_level,
-                "recommendation": c.recommendation
+                "recommendation": c.recommendation,
+                "suggested_citation": c.suggested_citation,
+                "proximate_citation_found": c.proximate_citation_found
             } for c in fact_audit.unanchored_claims[:20]  # top 20
         ],
         "total_references_detected": fact_audit.total_references_detected,
@@ -256,13 +267,21 @@ def _clean_text_nodes_and_perturb(
     }
 
     # Evaluate full document burstiness for Stage 1 metrics
-    stage1_metrics_res = restructure_semantics_and_burstiness(full_doc_text, target_cv=0.65)
+    stage1_metrics_res = restructure_semantics_and_burstiness(
+        full_doc_text,
+        target_cv=0.70,
+        enable_high_risk_residue_dissolve=True,
+        enable_entity_diversity=True
+    )
     stage1_metrics_dict = {
         "original_cv": stage1_metrics_res.metrics.original_cv,
         "reshaped_cv": stage1_metrics_res.metrics.reshaped_cv,
         "burstiness_boost_percent": stage1_metrics_res.metrics.burstiness_boost_percent,
         "cliches_purged_count": total_replacements,
         "short_punchy_sentences_created": total_reorganized,
+        "high_risk_residues_dissolved": stage1_metrics_res.metrics.high_risk_residues_dissolved,
+        "entity_diversity_replacements_count": stage1_metrics_res.metrics.entity_diversity_replacements_count,
+        "entity_diversity_details": stage1_metrics_res.metrics.entity_diversity_details[:15],
         "cliche_replacements": stage1_metrics_res.metrics.cliche_replacements[:15]
     }
 

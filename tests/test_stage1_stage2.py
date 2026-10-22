@@ -46,5 +46,43 @@ class TestStage1AndStage2(unittest.TestCase):
         self.assertTrue(0 <= audit.fact_integrity_score <= 100)
 
 
+    def test_high_risk_residue_dissolution(self):
+        text = "本研究旨在建立高齡照護之評估指標，進而分析實務缺口，以期達到優化照護品質之效益。"
+        res = restructure_semantics_and_burstiness(text, target_cv=0.70)
+        self.assertNotIn("以期達到優化照護品質之效益", res.cleaned_text)
+        self.assertGreaterEqual(res.metrics.high_risk_residues_dissolved, 1)
+
+    def test_entity_repetition_reduction(self):
+        text = (
+            "這所學校在近年推動了創新課程改革。\n"
+            "學校透過導入數位科技，讓師生互動更為緊密。\n"
+            "同時，學校也積極與產業界進行多方合作。\n"
+        )
+        res = restructure_semantics_and_burstiness(text, target_cv=0.70)
+        # Verify entity "學校" was replaced in subsequent occurrences
+        self.assertGreaterEqual(res.metrics.entity_diversity_replacements_count, 1)
+        # Original text has 3 occurrences, cleaned text should have fewer occurrences of literal "學校"
+        self.assertLess(res.cleaned_text.count("學校"), 3)
+
+    def test_citation_proximity_binding_and_suggestions(self):
+        sample_para = (
+            "近年來數位教育推展迅速。\n"
+            "各項調查顯示，互動學習效益顯著提升了 34.2%。\n"  # unanchored
+            "此項趨勢在各大都會區尤為明顯 [1]。\n"  # has anchor [1]
+        )
+        # Test audit returns suggested_citation
+        audit = audit_fact_citations(sample_para)
+        self.assertGreaterEqual(audit.unanchored_claims_count, 1)
+        unanchored_item = audit.unanchored_claims[0]
+        self.assertTrue(unanchored_item.proximate_citation_found)
+        self.assertEqual(unanchored_item.suggested_citation, "[1]")
+
+        # Test automated binding
+        from nonai.core.fact_citation_auditor import bind_citations_and_hedge
+        bound_text, bound_count, _ = bind_citations_and_hedge(sample_para, auto_bind_proximate=True)
+        self.assertGreaterEqual(bound_count, 1)
+        self.assertIn("[1]", bound_text)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -722,8 +722,18 @@ ${pool.slice(0, 6).map(id => `  &lt;w:rsid w:val="${id}"/&gt;`).join("\n")}
             <div style="font-size: 0.75rem; color: var(--success); margin-top: 4px;">提升 +${s1.burstiness_boost_percent || 0}%（長短句強烈交錯）</div>
           </div>
         </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 14px;">
+          <div style="flex: 1; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; font-size: 0.82rem;">
+            <span style="color: var(--text-muted);">高危殘句瓦解：</span>
+            <strong style="color: #6366f1;">${s1.high_risk_residues_dissolved || 0} 處</strong>
+          </div>
+          <div style="flex: 1; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; font-size: 0.82rem;">
+            <span style="color: var(--text-muted);">實體詞彙多樣化：</span>
+            <strong style="color: #10b981;">${s1.entity_diversity_replacements_count || 0} 處</strong>
+          </div>
+        </div>
         <h4 style="margin: 14px 0 8px 0; font-size: 0.95rem; color: var(--text-main);">${m.sub || "八股詞替換明細"} (${s1.cliches_purged_count || 0})</h4>
-        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; max-height: 220px; overflow-y: auto;">
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; max-height: 200px; overflow-y: auto;">
           ${replRows}
         </div>
       `;
@@ -739,6 +749,7 @@ ${pool.slice(0, 6).map(id => `  &lt;w:rsid w:val="${id}"/&gt;`).join("\n")}
           <div style="font-weight: 600; color: var(--text-main); margin-bottom: 4px;">【第 ${c.sentence_index} 句】包含 ${c.claim_type} 特徵「<span style="color: var(--danger); font-weight: 700;">${c.matched_clue}</span>」：</div>
           <div style="color: var(--text-muted); font-style: italic; margin-bottom: 6px;">"${c.sentence_text}"</div>
           <div style="color: var(--warning); font-size: 0.8rem;">💡 建議改善：${c.recommendation}</div>
+          ${c.suggested_citation ? `<div style="margin-top: 4px;"><span class="badge badge-success" style="font-size: 0.72rem; padding: 2px 6px;">🔗 可自動錨定鄰近文獻：${c.suggested_citation}</span></div>` : ''}
         </div>
       `).join("") || `<p style="color: var(--success); font-size: 0.85rem;">✅ 所有包含數據與量化主張之句子均具備文獻來源標籤，錨定度 100%！</p>`;
 
