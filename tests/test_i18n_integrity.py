@@ -45,7 +45,8 @@ class TestI18nIntegrity(unittest.TestCase):
             "rsid", "runs_split", "claude_purged", "pkg_synthesized",
             "semantic", "ghost_styles", "unicode", "human_time",
             "app_spoofed", "pdf_producer", "markdown",
-            "stage1_restructure", "stage2_fact_citation"
+            "stage1_restructure", "stage2_fact_citation",
+            "stage3_workflow", "stage4_workflow"
         }
 
         base_modals = data["zh-TW"]["modal_details"]

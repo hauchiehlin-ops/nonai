@@ -198,6 +198,16 @@ const I18N_TRANSLATIONS = {
         "title": "階段 2：事實錨點與文獻真偽核驗報告",
         "desc": "深度審查文章中所有包含百分比、統計數據與比較歸因的句子，精準定位未在當句提供文獻依據的事實漏洞；同時核驗參考文獻 DOI 與出版資訊，預警虛構引用。",
         "sub": "可查證事實與文獻完整性清單"
+      },
+      "stage3_workflow": {
+        "title": "階段 3：NonAI 仿生歷程注入（自動偽裝）— 全要素執行報告",
+        "desc": "NonAI 於檔案上傳時，已全自動注入底層仿生資料：包含 RSID 隨機會話池、文字 Runs 自然碎形化切分、AI 原生標記徹底剷除、Word 官方標準套件補齊、編輯工時偽裝與微軟 Word 軟體特徵注入，徹底瓦解文件鑑識檢測。",
+        "sub": "本檔案仿生注入項目與鑑識指標清單"
+      },
+      "stage4_workflow": {
+        "title": "階段 4：正規原生導出 PDF — 原生無痕作業指南",
+        "desc": "【關鍵步驟】切勿直接修改已定型排版的 PDF 或使用第三方線上轉檔網站！線上轉檔工具會在 PDF 元資料中殘留 Chromium、iText、LibreOffice 等特徵，一秒露餡。請下載洗滌後的 DOCX 檔案，使用本機正版 Microsoft Word 或系統原生列印產出 PDF，產出 100% 潔淨無痕文件。",
+        "sub": "微軟 Word 本地原生無痕導出操作步驟"
       }
     },
     "audit_risk": "AI 殘留綜合風險評分",
@@ -225,7 +235,22 @@ const I18N_TRANSLATIONS = {
     "stat_stage1_title": "階段 1：突發性與八股消除",
     "stat_stage2_title": "階段 2：事實錨定與文獻核驗",
     "modal_stage1_title": "階段 1：文字與語義去八股及突發性重構",
-    "modal_stage2_title": "階段 2：事實錨點與文獻真偽核驗報告"
+    "modal_stage2_title": "階段 2：事實錨點與文獻真偽核驗報告",
+    "wf_inspect_hint_step1": "🔍 點擊查看本階段處理歷程記錄",
+    "wf_inspect_hint_step2": "🔍 點擊查看本階段審計歷程記錄",
+    "wf_inspect_hint_step3": "🔍 點擊查看本階段注入歷程記錄",
+    "wf_inspect_hint_step4": "📖 點擊查看原生導出作業指南",
+    "wf_badge_executed": "⚡ ✅ 本檔案已自動執行",
+    "wf_step1_badge_executed": "階段 1 ⚡ ✅ 本檔案已自動重構",
+    "wf_step2_badge_executed": "階段 2 ⚡ ✅ 本檔案已自動審計",
+    "wf_step3_badge_executed": "階段 3 ⚡ ✅ 本檔案已自動注入",
+    "log_title": "📌 本檔案實際處理歷程記錄",
+    "log_target_file": "目標檔案：",
+    "log_status_executed": "已執行並生效",
+    "log_status_verified": "鑑識通過（0 項異常 · 純淨安全）",
+    "log_status_warning": "已檢測並徹底清除",
+    "log_status_pending": "待上傳檔案",
+    "log_pending_hint": "上傳檔案後，系統將於背景全自動執行此階段，並在此呈現本檔案處理歷程記錄。"
   },
   "zh-CN": {
     "app_title": "NonAI - AI 数字指纹与隐藏痕迹消除系统",
@@ -423,6 +448,16 @@ const I18N_TRANSLATIONS = {
         "title": "阶段 2：事实锚点与文献真伪核验报告",
         "desc": "深度审查文章中所有包含百分比、统计数据与比较归因的句子，精准定位未在当句提供文献依据的事实漏洞；同时核验参考文献 DOI 与出版信息，预警虚构引用。",
         "sub": "可查证事实与文献完整性清单"
+      },
+      "stage3_workflow": {
+        "title": "阶段 3：NonAI 仿生历程注入（自动伪装）— 全要素执行报告",
+        "desc": "NonAI 于档案上传时，已全自动注入底层仿生数据：包含 RSID 随机会话池、文字 Runs 自然碎形化切分、AI 原生标记彻底铲除、Word 官方标准套件补齐、编辑工时伪装与微软 Word 软件特征注入，彻底瓦解文件鉴识检测。",
+        "sub": "本档案仿生注入项目与鉴识指标清单"
+      },
+      "stage4_workflow": {
+        "title": "阶段 4：正规原生导出 PDF — 原生无痕作业指南",
+        "desc": "【关键步骤】切勿直接修改已定型排版的 PDF 或使用第三方在线转档网站！在线转档工具会在 PDF 元数据中残留 Chromium、iText、LibreOffice 等特征，一秒露馅。请下载洗涤后的 DOCX 档案，使用本机正版 Microsoft Word 或系统原生打印产出 PDF，产出 100% 洁净无痕文件。",
+        "sub": "微软 Word 本地原生无痕导出操作步骤"
       }
     },
     "audit_risk": "AI 残留综合风险评分",
@@ -450,7 +485,22 @@ const I18N_TRANSLATIONS = {
     "stat_stage1_title": "阶段 1：突发性与套话消除",
     "stat_stage2_title": "阶段 2：事实锚定与文献核验",
     "modal_stage1_title": "阶段 1：文字与语义去套话及突发性重构",
-    "modal_stage2_title": "阶段 2：事实锚点与文献真伪核验报告"
+    "modal_stage2_title": "阶段 2：事实锚点与文献真伪核验报告",
+    "wf_inspect_hint_step1": "🔍 点击查看本阶段处理历程记录",
+    "wf_inspect_hint_step2": "🔍 点击查看本阶段审计历程记录",
+    "wf_inspect_hint_step3": "🔍 点击查看本阶段注入历程记录",
+    "wf_inspect_hint_step4": "📖 点击查看原生导出作业指南",
+    "wf_badge_executed": "⚡ ✅ 本档案已自动执行",
+    "wf_step1_badge_executed": "阶段 1 ⚡ ✅ 本档案已自动重构",
+    "wf_step2_badge_executed": "阶段 2 ⚡ ✅ 本档案已自动审计",
+    "wf_step3_badge_executed": "阶段 3 ⚡ ✅ 本档案已自动注入",
+    "log_title": "📌 本档案实际处理历程记录",
+    "log_target_file": "目标档案：",
+    "log_status_executed": "已执行并生效",
+    "log_status_verified": "鉴识通过（0 项异常 · 纯净安全）",
+    "log_status_warning": "已检测并彻底清除",
+    "log_status_pending": "待上传档案",
+    "log_pending_hint": "上传档案后，系统将于后台全自动执行此阶段，并在此呈现本档案处理历程记录。"
   },
   "ja": {
     "app_title": "NonAI - AI デジタル指紋・痕跡消去システム",
@@ -648,6 +698,16 @@ const I18N_TRANSLATIONS = {
         "title": "ステップ 2：事実アンカーと文献真正性検証レポート",
         "desc": "割合、統計数値、比較主張を含むすべての文を精査し、引用欠落の事実ホールを特定。参考文献のDOIと出版情報を検証し、架空文献を警告します。",
         "sub": "検証可能事実と文献整合性リスト"
+      },
+      "stage3_workflow": {
+        "title": "ステップ 3：NonAI 生体模倣履歴注入 — 総合実行レポート",
+        "desc": "ファイルアップロード時に、RSIDセッションプール、Runsフラクタル分割、AI署名完全消去、標準パッケージ補完、編集時間偽装を全自動注入します。",
+        "sub": "生体模倣注入項目と鑑識指標一覧"
+      },
+      "stage4_workflow": {
+        "title": "ステップ 4：正規ネイティブPDF出力 — 無痕作業ガイド",
+        "desc": "オンライン変換サイトは使用せず、洗浄済みDOCXを正規Microsoft Wordで直接PDF出力してください。",
+        "sub": "Microsoft Word ネイティブPDF出力手順"
       }
     },
     "audit_risk": "AI 指紋残留総合リスク評価",
@@ -675,7 +735,22 @@ const I18N_TRANSLATIONS = {
     "stat_stage1_title": "ステップ 1：バースト性と定型語消去",
     "stat_stage2_title": "ステップ 2：事実アンカーと文献検証",
     "modal_stage1_title": "ステップ 1：語彙脱定型化とバースト性再構築",
-    "modal_stage2_title": "ステップ 2：事実アンカーと文献真正性検証レポート"
+    "modal_stage2_title": "ステップ 2：事実アンカーと文献真正性検証レポート",
+    "wf_inspect_hint_step1": "🔍 クリックして実行ログを表示",
+    "wf_inspect_hint_step2": "🔍 クリックして監査ログを表示",
+    "wf_inspect_hint_step3": "🔍 クリックして注入ログを表示",
+    "wf_inspect_hint_step4": "📖 クリックして出力ガイドを表示",
+    "wf_badge_executed": "⚡ ✅ 実行完了",
+    "wf_step1_badge_executed": "ステップ 1 ⚡ ✅ 自動再構築完了",
+    "wf_step2_badge_executed": "ステップ 2 ⚡ ✅ 自動監査完了",
+    "wf_step3_badge_executed": "ステップ 3 ⚡ ✅ 自動注入完了",
+    "log_title": "📌 このファイルの実際の処理履歴ログ",
+    "log_target_file": "対象ファイル：",
+    "log_status_executed": "実行済み・反映完了",
+    "log_status_verified": "鑑識合格（異常0件・安全）",
+    "log_status_warning": "検出・完全消去済み",
+    "log_status_pending": "ファイル未アップロード",
+    "log_pending_hint": "ファイルをアップロードすると、自動的に処理が実行され、ここに履歴ログが表示されます。"
   },
   "ko": {
     "app_title": "NonAI - AI 디지털 지문 및 숨김 흔적 제거 시스템",
@@ -873,6 +948,16 @@ const I18N_TRANSLATIONS = {
         "title": "2단계: 사실 앵커링 및 문헌 진위 검증 보고서",
         "desc": "백분율, 통계치, 비교 주장이 포함된 모든 문장을 심층 검토하여 출처가 누락된 허점을 식별하고, 참고문헌 DOI 및 출판 정보를 검증하여 가상 인용을 경고합니다.",
         "sub": "검증 가능 사실 및 문헌 무결성 목록"
+      },
+      "stage3_workflow": {
+        "title": "3단계: NonAI 생체 모사 이력 주입 — 종합 실행 보고서",
+        "desc": "파일 업로드 시 RSID 세션 체인, 텍스트 Runs 분할, AI 서명 제거, Word 표준 패키지 보완, 편집 시간 위장을 완전 자동으로 주입합니다.",
+        "sub": "생체 모사 주입 항목 및 포렌식 지표 목록"
+      },
+      "stage4_workflow": {
+        "title": "4단계: 정규 네이티브 PDF 내보내기 — 가이드",
+        "desc": "온라인 변환기를 사용하지 말고, 정화된 DOCX를 정품 Microsoft Word에서 직접 PDF로 내보내십시오.",
+        "sub": "Microsoft Word 네이티브 PDF 내보내기 단계"
       }
     },
     "audit_risk": "AI 잔존 종합 위험도",
@@ -900,7 +985,22 @@ const I18N_TRANSLATIONS = {
     "stat_stage1_title": "1단계: 버스트성 및 상투어 제거",
     "stat_stage2_title": "2단계: 사실 앵커링 및 문헌 검증",
     "modal_stage1_title": "1단계: 어휘 정형화 탈피 및 버스트성 재구성",
-    "modal_stage2_title": "2단계: 사실 앵커링 및 문헌 진위 검증 보고서"
+    "modal_stage2_title": "2단계: 사실 앵커링 및 문헌 진위 검증 보고서",
+    "wf_inspect_hint_step1": "🔍 클릭하여 실행 로그 확인",
+    "wf_inspect_hint_step2": "🔍 클릭하여 감사 로그 확인",
+    "wf_inspect_hint_step3": "🔍 클릭하여 주입 로그 확인",
+    "wf_inspect_hint_step4": "📖 클릭하여 내보내기 가이드 확인",
+    "wf_badge_executed": "⚡ ✅ 실행 완료",
+    "wf_step1_badge_executed": "1단계 ⚡ ✅ 자동 재구성 완료",
+    "wf_step2_badge_executed": "2단계 ⚡ ✅ 자동 감사 완료",
+    "wf_step3_badge_executed": "3단계 ⚡ ✅ 자동 주입 완료",
+    "log_title": "📌 본 파일의 실제 처리 내역 로그",
+    "log_target_file": "대상 파일:",
+    "log_status_executed": "실행 완료 및 적용됨",
+    "log_status_verified": "포렌식 검증 통과 (이상 0건 · 안전)",
+    "log_status_warning": "감지 및 완전 삭제됨",
+    "log_status_pending": "파일 업로드 대기 중",
+    "log_pending_hint": "파일을 업로드하면 시스템이 자동으로 이 단계를 수행하고 처리 내역 로그를 표시합니다."
   },
   "th": {
     "app_title": "NonAI - ระบบลบลายพิมพ์นิ้วมือดิจิทัลและร่องรอย AI",
@@ -1098,6 +1198,16 @@ const I18N_TRANSLATIONS = {
         "title": "ขั้นตอนที่ 2: รายงานการเชื่อมโยงข้อเท็จจริงและความแท้จริงของเอกสาร",
         "desc": "ตรวจสอบประโยคที่มีตัวเลข ร้อยละ และการเปรียบเทียบอย่างละเอียดเพื่อชี้จุดบกพร่องที่ขาดการอ้างอิง พร้อมตรวจ DOI และข้อมูลการตีพิมพ์เพื่อป้องกันเอกสารลวง",
         "sub": "รายการข้อเท็จจริงที่ตรวจสอบได้และความสมบูรณ์ของเอกสาร"
+      },
+      "stage3_workflow": {
+        "title": "ขั้นตอนที่ 3: การฉีดข้อมูลทางชีวภาพ NonAI — รายงานการทำงานครบวงจร",
+        "desc": "ระบบฉีดข้อมูลจำลอง RSID, การแยก Runs, ลบรอยนิ้วมือ AI, เติมส่วนประกอบมาตรฐาน Word และจำลองเวลาพิมพ์อัตโนมัติ",
+        "sub": "รายการการฉีดข้อมูลและตัวชี้วัดสำหรับไฟล์นี้"
+      },
+      "stage4_workflow": {
+        "title": "ขั้นตอนที่ 4: การส่งออกเป็น PDF แบบเนทีฟ — คู่มือการใช้งาน",
+        "desc": "ห้ามใช้เว็บแปลงไฟล์ออนไลน์ ให้เปิดไฟล์ DOCX ที่ผ่านการล้างใน Microsoft Word ของแท้แล้วสั่งพิมพ์/บันทึกเป็น PDF",
+        "sub": "ขั้นตอนการส่งออก PDF ผ่าน Microsoft Word"
       }
     },
     "audit_risk": "คะแนนความเสี่ยงลายเซ็น AI",
@@ -1125,7 +1235,22 @@ const I18N_TRANSLATIONS = {
     "stat_stage1_title": "ขั้นตอนที่ 1: การปรับภาษาและเพิ่มความแปรผัน",
     "stat_stage2_title": "ขั้นตอนที่ 2: การตรวจสอบข้อเท็จจริงและเอกสาร",
     "modal_stage1_title": "ขั้นตอนที่ 1: การลดความซ้ำซากของภาษาและปรับความยาวประโยค",
-    "modal_stage2_title": "ขั้นตอนที่ 2: รายงานการเชื่อมโยงข้อเท็จจริงและความแท้จริงของเอกสาร"
+    "modal_stage2_title": "ขั้นตอนที่ 2: รายงานการเชื่อมโยงข้อเท็จจริงและความแท้จริงของเอกสาร",
+    "wf_inspect_hint_step1": "🔍 คลิกเพื่อดูบันทึกการทำงาน",
+    "wf_inspect_hint_step2": "🔍 คลิกเพื่อดูบันทึกการตรวจสอบ",
+    "wf_inspect_hint_step3": "🔍 คลิกเพื่อดูบันทึกการฉีดข้อมูล",
+    "wf_inspect_hint_step4": "📖 คลิกเพื่อดูคู่มือการส่งออก",
+    "wf_badge_executed": "⚡ ✅ ทำงานสำเร็จ",
+    "wf_step1_badge_executed": "ขั้นตอนที่ 1 ⚡ ✅ ปรับโครงสร้างเสร็จสิ้น",
+    "wf_step2_badge_executed": "ขั้นตอนที่ 2 ⚡ ✅ ตรวจสอบเสร็จสิ้น",
+    "wf_step3_badge_executed": "ขั้นตอนที่ 3 ⚡ ✅ ฉีดข้อมูลเสร็จสิ้น",
+    "log_title": "📌 บันทึกประวัติการประมวลผลไฟล์นี้",
+    "log_target_file": "ไฟล์เป้าหมาย:",
+    "log_status_executed": "ดำเนินการและมีผลแล้ว",
+    "log_status_verified": "ผ่านการตรวจสอบ (ไม่มีความผิดปกติ ปลอดภัย)",
+    "log_status_warning": "ตรวจพบและลบเรียบร้อยแล้ว",
+    "log_status_pending": "รอการอัปโหลดไฟล์",
+    "log_pending_hint": "เมื่ออัปโหลดไฟล์ ระบบจะทำงานขั้นตอนนี้โดยอัตโนมัติและแสดงบันทึกที่นี่"
   },
   "ru": {
     "app_title": "NonAI - Удаление цифровых отпечатков и следов ИИ",
@@ -1323,6 +1448,16 @@ const I18N_TRANSLATIONS = {
         "title": "Этап 2: Проверка привязки фактов и аутентичности ссылок",
         "desc": "Глубокая проверка предложений с процентами, статистикой и сравнениями на наличие ссылок; верификация DOI и реквизитов для выявления галлюцинаций ИИ.",
         "sub": "Проверяемые факты и целостность списка литературы"
+      },
+      "stage3_workflow": {
+        "title": "Этап 3: Биомиметические инъекции NonAI — Полный отчет",
+        "desc": "При загрузке автоматически внедряются пулы сессий RSID, фрактальное дробление Runs, очистка тегов ИИ, синтез пакетов Word и подмена времени работы.",
+        "sub": "Список инъекций и криминалистические метрики"
+      },
+      "stage4_workflow": {
+        "title": "Этап 4: Нативный экспорт в PDF — Руководство",
+        "desc": "Не используйте онлайн-конвертеры. Откройте очищенный DOCX в Microsoft Word и экспортируйте в PDF локально.",
+        "sub": "Пошаговый протокол экспорта PDF через Word"
       }
     },
     "audit_risk": "Общий риск присутствия AI-следов",
@@ -1350,7 +1485,22 @@ const I18N_TRANSLATIONS = {
     "stat_stage1_title": "Этап 1: Вариативность и снятие штампов",
     "stat_stage2_title": "Этап 2: Проверка фактов и источников",
     "modal_stage1_title": "Этап 1: Снятие клише и реструктуризация вариативности (Burstiness)",
-    "modal_stage2_title": "Этап 2: Проверка привязки фактов и аутентичности ссылок"
+    "modal_stage2_title": "Этап 2: Проверка привязки фактов и аутентичности ссылок",
+    "wf_inspect_hint_step1": "🔍 Нажмите для просмотра логов этапа",
+    "wf_inspect_hint_step2": "🔍 Нажмите для просмотра аудита этапа",
+    "wf_inspect_hint_step3": "🔍 Нажмите для просмотра логов инъекции",
+    "wf_inspect_hint_step4": "📖 Руководство по нативному экспорту в PDF",
+    "wf_badge_executed": "⚡ ✅ Выполнено для файла",
+    "wf_step1_badge_executed": "Этап 1 ⚡ ✅ Автоматически перестроено",
+    "wf_step2_badge_executed": "Этап 2 ⚡ ✅ Автоматически проверено",
+    "wf_step3_badge_executed": "Этап 3 ⚡ ✅ Автоматически внедрено",
+    "log_title": "📌 Фактический журнал обработки файла",
+    "log_target_file": "Целевой файл:",
+    "log_status_executed": "Выполнено и активно",
+    "log_status_verified": "Проверка пройдена (0 аномалий · Чисто)",
+    "log_status_warning": "Обнаружено и удалено",
+    "log_status_pending": "Ожидание загрузки файла",
+    "log_pending_hint": "После загрузки документа система автоматически выполнит этот этап и отобразит журнал обработки."
   },
   "en": {
     "app_title": "NonAI - AI Digital Fingerprint & Watermark Stripper",
@@ -1548,6 +1698,16 @@ const I18N_TRANSLATIONS = {
         "title": "Stage 2: Fact & Citation Anchoring Audit Report",
         "desc": "Exhaustively audits all sentences with statistics, percentages, and comparative assertions for explicit citations; validates reference DOIs to detect hallucinated citations.",
         "sub": "Verifiable Claims & Reference Integrity Breakdown"
+      },
+      "stage3_workflow": {
+        "title": "Stage 3: NonAI Biomimetic Injections — Full Execution Report",
+        "desc": "Upon file upload, NonAI automatically injects low-level biomimetic artifacts: randomized RSID session chains, fractal text run splits, complete AI signature purge, official Word standard package synthesis, human editing time spoofing, and genuine MS Word software fingerprinting.",
+        "sub": "Biomimetic Injections & Forensic Metrics for Current File"
+      },
+      "stage4_workflow": {
+        "title": "Stage 4: Native PDF Export — Forensic Integrity Guide",
+        "desc": "Critical Protocol: Never use third-party online converters or edit compiled PDFs directly. Online converters inject signatures like Chromium, iText, or LibreOffice. Download the cleaned DOCX, open it in licensed Microsoft Word, and export/print to PDF locally.",
+        "sub": "Step-by-Step Native Word PDF Export Protocol"
       }
     },
     "audit_risk": "AI Residual Risk Score",
@@ -1575,6 +1735,21 @@ const I18N_TRANSLATIONS = {
     "stat_stage1_title": "Stage 1: Burstiness & Cliché Purge",
     "stat_stage2_title": "Stage 2: Fact & Citation Audit",
     "modal_stage1_title": "Stage 1: Lexical De-patterning & Burstiness Reshaper",
-    "modal_stage2_title": "Stage 2: Fact & Citation Anchoring Audit Report"
+    "modal_stage2_title": "Stage 2: Fact & Citation Anchoring Audit Report",
+    "wf_inspect_hint_step1": "🔍 Click to view Stage 1 execution logs",
+    "wf_inspect_hint_step2": "🔍 Click to view Stage 2 audit logs",
+    "wf_inspect_hint_step3": "🔍 Click to view Stage 3 injection logs",
+    "wf_inspect_hint_step4": "📖 Click to view native PDF export guide",
+    "wf_badge_executed": "⚡ ✅ Automated for this file",
+    "wf_step1_badge_executed": "Stage 1 ⚡ ✅ Auto-Restructured",
+    "wf_step2_badge_executed": "Stage 2 ⚡ ✅ Auto-Audited",
+    "wf_step3_badge_executed": "Stage 3 ⚡ ✅ Auto-Injected",
+    "log_title": "📌 Execution Log for Current File",
+    "log_target_file": "Target File:",
+    "log_status_executed": "Executed & Active",
+    "log_status_verified": "Forensic Verified (0 Anomalies · Safe)",
+    "log_status_warning": "Detected & Thoroughly Purged",
+    "log_status_pending": "File Upload Pending",
+    "log_pending_hint": "Upload a document to automatically run this stage and view real-time execution logs for your file here."
   }
 };
