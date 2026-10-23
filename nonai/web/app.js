@@ -316,6 +316,14 @@ document.addEventListener("DOMContentLoaded", () => {
       lastFileResult = data;
       renderFileResult(data);
     } catch (err) {
+      const errMsg = err.message || "";
+      if (errMsg.includes("fetch") || err.name === "TypeError") {
+        if (!isLocalhost) {
+          const fileSizeMB = file ? (file.size / (1024 * 1024)).toFixed(1) : "4.5+";
+          showPayloadLimitModal(fileSizeMB);
+          return;
+        }
+      }
       alert(err.message.startsWith("⚠️") ? err.message : ("檔案處理時發生錯誤 / File processing error: " + err.message));
     } finally {
       dropZone.querySelector("h2").textContent = t.drop_title;

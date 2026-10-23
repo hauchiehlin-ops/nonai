@@ -40,7 +40,15 @@ NSMAP = {
     "xsi": XSI_NS,
 }
 
-# Standard XML content for Microsoft Office Word package files
+DEFAULT_SETTINGS_XML = b"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" mc:Ignorable="w14 w15">
+  <w:defaultTabStop w:val="720"/>
+  <w:characterSpacingControl w:val="doNotCompress"/>
+  <w:compat>
+    <w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/>
+  </w:compat>
+</w:settings>"""
+
 DEFAULT_FONTTABLE_XML = b"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:fonts xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" mc:Ignorable="w14 w15">
   <w:font w:name="Calibri">
@@ -350,6 +358,14 @@ def _fragment_and_inject_rsids(
                 r.set(f"{{{W_NS}}}rsidRPr", random.choice(rsid_pool))
             rsids_assigned += 1
 
+            # Avoid fragmenting runs containing non-text elements (drawings, fields, bookmarks)
+            child_tags = [c.tag for c in r]
+            has_complex_elements = any(
+                tag not in (f"{{{W_NS}}}rPr", f"{{{W_NS}}}t") for tag in child_tags
+            )
+            if has_complex_elements:
+                continue
+
             # Fragment long text runs if they contain natural pause points
             t_elem = r.find(f"{{{W_NS}}}t")
             if t_elem is not None and t_elem.text and len(t_elem.text) > 35:
@@ -399,36 +415,29 @@ def _fragment_and_inject_rsids(
 
 
 def _update_settings_xml(settings_xml_content: bytes, rsid_pool: List[str]) -> bytes:
-    """Inject realistic Word settings and <w:rsids> table into word/settings.xml."""
-    try:
-        root = etree.fromstring(settings_xml_content)
-    except Exception:
-        root = etree.Element(f"{{{W_NS}}}settings", nsmap={"w": W_NS})
+    """Inject realistic Word settings and <w:rsids> table into word/settings.xml with ECMA-376 schema compliance."""
+    if not settings_xml_content or not settings_xml_content.strip():
+        try:
+            root = etree.fromstring(DEFAULT_SETTINGS_XML)
+        except Exception:
+            root = etree.Element(f"{{{W_NS}}}settings", nsmap={"w": W_NS})
+    else:
+        try:
+            root = etree.fromstring(settings_xml_content)
+        except Exception:
+            root = etree.fromstring(DEFAULT_SETTINGS_XML)
 
-    # Standard Word settings
-    def ensure_setting(tag: str, attrs: Dict[str, str]):
-        elem = root.find(f"{{{W_NS}}}{tag}")
-        if elem is None:
-            elem = etree.SubElement(root, f"{{{W_NS}}}{tag}")
-        for k, v in attrs.items():
-            elem.set(f"{{{W_NS}}}{k}", v)
-
-    ensure_setting("defaultTabStop", {"val": "720"})
-    ensure_setting("characterSpacingControl", {"val": "doNotCompress"})
-
-    compat = root.find(f"{{{W_NS}}}compat")
-    if compat is None:
-        compat = etree.SubElement(root, f"{{{W_NS}}}compat")
-        etree.SubElement(compat, f"{{{W_NS}}}compatSetting", {
-            f"{{{W_NS}}}name": "compatibilityMode",
-            f"{{{W_NS}}}uri": "http://schemas.microsoft.com/office/word",
-            f"{{{W_NS}}}val": "15"
-        })
-
-    # Find or create w:rsids
+    # Find or create w:rsids without violating ECMA-376 sequence
     rsids_elem = root.find(f"{{{W_NS}}}rsids")
     if rsids_elem is None:
-        rsids_elem = etree.SubElement(root, f"{{{W_NS}}}rsids")
+        compat_elem = root.find(f"{{{W_NS}}}compat")
+        if compat_elem is not None:
+            # Place w:rsids immediately after w:compat to preserve schema order
+            compat_idx = root.index(compat_elem)
+            rsids_elem = etree.Element(f"{{{W_NS}}}rsids")
+            root.insert(compat_idx + 1, rsids_elem)
+        else:
+            rsids_elem = etree.SubElement(root, f"{{{W_NS}}}rsids")
     else:
         rsids_elem.clear()
 
@@ -565,7 +574,10 @@ def _ensure_content_types(content_types_bytes: bytes, added_parts: List[str]) ->
     except Exception:
         root = etree.Element(f"{{{CT_NS}}}Types", nsmap={None: CT_NS})
 
-    existing_overrides = {elem.get("PartName") for elem in root.findall(f"{{{CT_NS}}}Override")}
+    existing_overrides = {
+        (elem.get("PartName") or "").strip().lower()
+        for elem in root.findall(f"{{{CT_NS}}}Override")
+    }
 
     part_type_map = {
         "/word/fontTable.xml": "application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml",
@@ -580,7 +592,7 @@ def _ensure_content_types(content_types_bytes: bytes, added_parts: List[str]) ->
 
     # Ensure required overrides
     for part_name, content_type in part_type_map.items():
-        if part_name not in existing_overrides:
+        if part_name.lower() not in existing_overrides:
             override = etree.SubElement(root, f"{{{CT_NS}}}Override")
             override.set("PartName", part_name)
             override.set("ContentType", content_type)
@@ -601,7 +613,15 @@ def _ensure_document_relationships(rels_bytes: bytes) -> bytes:
     except Exception:
         root = etree.Element(f"{{{PR_NS}}}Relationships", nsmap={None: PR_NS})
 
-    existing_targets = {elem.get("Target") for elem in root.findall(f"{{{PR_NS}}}Relationship")}
+    existing_targets = set()
+    existing_types = set()
+    for elem in root.findall(f"{{{PR_NS}}}Relationship"):
+        t = (elem.get("Target") or "").strip().lower()
+        t = t.replace("\\", "/").lstrip("/")
+        if t.startswith("word/"):
+            t = t[5:]
+        existing_targets.add(t)
+        existing_types.add(elem.get("Type"))
     
     # Find maximum existing rId index
     max_id = 0
@@ -620,7 +640,8 @@ def _ensure_document_relationships(rels_bytes: bytes) -> bytes:
     ]
 
     for target, rel_type in required_rels:
-        if target not in existing_targets:
+        norm_target = target.lower()
+        if norm_target not in existing_targets and rel_type not in existing_types:
             max_id += 1
             rel_elem = etree.SubElement(root, f"{{{PR_NS}}}Relationship")
             rel_elem.set("Id", f"rId{max_id}")
@@ -776,24 +797,6 @@ def sanitize_docx(
     )
     xml_files["docProps/core.xml"] = sanitized_core
     claude_purged_count += c_purged
-
-    # 9. Global AI String Purge across all text/XML parts
-    ai_patterns = [
-        re.compile(rb'Claude\s*Docs(\s*node/[a-f0-9-]+@\d+\s*docx-w\d+)?', re.IGNORECASE),
-        re.compile(rb'Claude', re.IGNORECASE),
-        re.compile(rb'Anthropic', re.IGNORECASE),
-        re.compile(rb'python-docx', re.IGNORECASE),
-        re.compile(rb'docx-w\d+', re.IGNORECASE),
-    ]
-
-    for fname, content in list(xml_files.items()):
-        if fname.endswith(".xml") or fname.endswith(".rels"):
-            original_len = len(content)
-            for pat in ai_patterns:
-                content = pat.sub(b'', content)
-            if len(content) != original_len:
-                claude_purged_count += 1
-                xml_files[fname] = content
 
     # Write all sanitized files into the output zip
     for filename, content in xml_files.items():

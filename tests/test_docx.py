@@ -78,5 +78,57 @@ def test_docx_sanitization():
 
     print("test_docx_sanitization passed successfully!")
 
+def test_docx_windows_word_compatibility():
+    """Verify that docx with existing complex settings, relationships, and mentions of Claude remains well-formed and valid."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("[Content_Types].xml", b"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>
+</Types>""")
+        z.writestr("word/settings.xml", b"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:defaultTabStop w:val="720"/>
+  <w:characterSpacingControl w:val="doNotCompress"/>
+  <w:compat>
+    <w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/>
+  </w:compat>
+</w:settings>""")
+        z.writestr("word/_rels/document.xml.rels", b"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>
+</Relationships>""")
+        z.writestr("word/document.xml", b"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:t>In 1948, Claude Shannon published his seminal paper on information theory.</w:t>
+      </w:r>
+    </w:p>
+  </w:body>
+</w:document>""")
+
+    res = sanitize_docx(buf.getvalue(), author_name="Researcher", rsid_session_count=10)
+    out_zip = zipfile.ZipFile(io.BytesIO(res.cleaned_bytes), "r")
+
+    # All XML files must parse without any XMLSyntaxError
+    for fname in out_zip.namelist():
+        if fname.endswith(".xml") or fname.endswith(".rels"):
+            content = out_zip.read(fname)
+            etree.fromstring(content)
+
+    # Verify relationships do not contain duplicated types
+    rels_content = out_zip.read("word/_rels/document.xml.rels")
+    r_root = etree.fromstring(rels_content)
+    types_found = [el.get("Type") for el in r_root]
+    assert len(types_found) == len(set(types_found)), "Duplicate relationship types detected!"
+
+    print("test_docx_windows_word_compatibility passed successfully!")
+
 if __name__ == "__main__":
     test_docx_sanitization()
+    test_docx_windows_word_compatibility()
