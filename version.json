@@ -1,7 +1,7 @@
 {
-  "version": "1.4.2",
+  "version": "1.4.3",
   "release_date": "2026-10-24",
   "bump_level": "patch",
-  "description": "fix(docx): fix OpenXML schema compatibility for Windows Word and enhance upload error handling",
-  "timestamp": "2026-10-24T02:59:02.329715"
+  "description": "fix(ui): resolve drag-and-drop failed to fetch by persisting file handle to input and preventing window navigation",
+  "timestamp": "2026-10-24T03:04:38.599768"
 }

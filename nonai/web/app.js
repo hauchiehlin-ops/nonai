@@ -125,27 +125,65 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnDownload = document.getElementById("btnDownload");
   const fileStatsGrid = document.getElementById("fileStatsGrid");
 
-  dropZone.addEventListener("click", () => fileInput.click());
+  // Prevent browser from opening dragged files across the entire window
+  ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
+    window.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }, false);
+    document.body.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }, false);
+  });
 
-  dropZone.addEventListener("dragover", (e) => {
+  let isDropping = false;
+
+  dropZone.addEventListener("click", () => {
+    if (isDropping) return;
+    fileInput.click();
+  });
+
+  dropZone.addEventListener("dragenter", (e) => {
     e.preventDefault();
+    e.stopPropagation();
     dropZone.classList.add("dragover");
   });
 
-  dropZone.addEventListener("dragleave", () => {
+  dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.add("dragover");
+  });
+
+  dropZone.addEventListener("dragleave", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.relatedTarget && dropZone.contains(e.relatedTarget)) return;
     dropZone.classList.remove("dragover");
   });
 
   dropZone.addEventListener("drop", (e) => {
     e.preventDefault();
+    e.stopPropagation();
     dropZone.classList.remove("dragover");
-    if (e.dataTransfer.files.length > 0) {
-      handleFileUpload(e.dataTransfer.files[0]);
+    isDropping = true;
+    setTimeout(() => { isDropping = false; }, 300);
+
+    const files = e.dataTransfer && e.dataTransfer.files;
+    if (files && files.length > 0) {
+      try {
+        fileInput.files = files;
+      } catch (err) {
+        // Fallback for browsers with restricted FileList assignment
+      }
+      const targetFile = (fileInput.files && fileInput.files.length > 0) ? fileInput.files[0] : files[0];
+      handleFileUpload(targetFile);
     }
   });
 
   fileInput.addEventListener("change", (e) => {
-    if (e.target.files.length > 0) {
+    if (e.target.files && e.target.files.length > 0) {
       handleFileUpload(e.target.files[0]);
     }
   });

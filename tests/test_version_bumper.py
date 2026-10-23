@@ -9,7 +9,7 @@ def test_bump_semver_rules():
     assert bump_semver("v1.1.0", "patch") == "1.1.1"
 
     curr = get_current_version()
-    assert curr == "1.4.2", f"Expected current version 1.4.2, got {curr}"
+    assert curr == "1.4.3", f"Expected current version 1.4.3, got {curr}"
     print("test_version_bumper passed successfully!")
 
 if __name__ == "__main__":
