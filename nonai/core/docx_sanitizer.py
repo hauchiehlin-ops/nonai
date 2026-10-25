@@ -180,6 +180,28 @@ def _generate_rsid_pool(count: int = 30) -> List[str]:
     return sorted(list(pool))
 
 
+def _is_inside_table(elem: etree._Element) -> bool:
+    """Check if an XML element is inside a table, table cell, or table properties."""
+    curr = elem.getparent()
+    while curr is not None:
+        tag = curr.tag
+        if tag in (f"{{{W_NS}}}tc", f"{{{W_NS}}}tbl", f"{{{W_NS}}}tcPr", f"{{{W_NS}}}tblPr", f"{{{W_NS}}}trPr"):
+            return True
+        curr = curr.getparent()
+    return False
+
+
+def _is_inside_drawing_or_shape(elem: etree._Element) -> bool:
+    """Check if an XML element is inside DrawingML, VML, SmartArt, or shape containers."""
+    curr = elem.getparent()
+    while curr is not None:
+        tag = curr.tag.lower()
+        if any(marker in tag for marker in ("drawing", "pict", "shape", "graphic", "dgm")):
+            return True
+        curr = curr.getparent()
+    return False
+
+
 def _clean_text_nodes_and_perturb(
     root: etree._Element,
     enable_perturb: bool = True,
@@ -188,7 +210,8 @@ def _clean_text_nodes_and_perturb(
     """
     Find all <w:t> elements:
     1. Strip invisible unicode characters.
-    2. If enable_perturb, apply deep semantic restructuring, AI cliché purging, and burstiness reshaping.
+    2. If enable_perturb, apply deep semantic restructuring, AI cliché purging, and burstiness reshaping
+       (strictly skipping tables, drawings, and charts to preserve formatting and structured data).
     3. Run Stage 2 fact and citation audit across the complete document text.
     Returns (unicode_cleaned, semantic_replacements, semantic_reorganized, stage1_metrics, stage2_audit).
     """
@@ -204,8 +227,11 @@ def _clean_text_nodes_and_perturb(
             curr_text = clean_res.cleaned_text
             total_unicode_cleaned += clean_res.total_removed
 
+            # If inside table or drawing/shape, protect layout, formulas, and structured text!
+            is_protected = _is_inside_table(t_elem) or _is_inside_drawing_or_shape(t_elem)
+
             # 2. Stage 1: Semantic restructure & burstiness
-            if enable_perturb and len(curr_text.strip()) > 3:
+            if enable_perturb and not is_protected and len(curr_text.strip()) > 3:
                 # First run semantic restructurer (cliché purge + entity diversity + high-risk residue dissolve + burstiness)
                 s_res = restructure_semantics_and_burstiness(
                     curr_text,
@@ -300,22 +326,37 @@ def _strip_ghost_shading_and_fonts(root: etree._Element) -> Tuple[int, List[str]
     """
     Remove inline shading (<w:shd>) caused by copying from ChatGPT/Claude
     and clean suspicious web fonts.
+    Strictly preserves table cell shading (<w:tcPr>), Gantt charts, colored progress blocks,
+    and drawings/shapes.
     """
     removed_count = 0
     items = []
-    # 1. Remove background shading in runs and paragraphs
+    # 1. Remove background shading in runs and paragraphs outside tables and drawings
     for shd in list(root.iter(f"{{{W_NS}}}shd")):
+        if _is_inside_table(shd) or _is_inside_drawing_or_shape(shd):
+            # Strictly preserve table cell, table row, table, and drawing shading
+            continue
+
+        parent = shd.getparent()
+        if parent is None:
+            continue
+
+        # Only target run properties or paragraph properties in body text
+        if parent.tag not in (f"{{{W_NS}}}rPr", f"{{{W_NS}}}pPr"):
+            continue
+
         fill = shd.get(f"{{{W_NS}}}fill", "").upper()
         if fill and fill not in ("AUTO", "NONE", "FFFFFF"):
-            parent = shd.getparent()
-            if parent is not None:
-                parent.remove(shd)
-                removed_count += 1
-                items.append(f'<w:shd w:fill="{fill}"/> (對話框背景 HEX 色碼)')
+            parent.remove(shd)
+            removed_count += 1
+            items.append(f'<w:shd w:fill="{fill}"/> (對話框背景 HEX 色碼)')
 
-    # 2. Neutralize AI web fonts (Inter, Söhne, etc.)
-    ai_fonts = {"INTER", "SÖHNE", "SOEHNE", "SYSTEM-UI", "ROBOTO", "SEGOE UI"}
+    # 2. Neutralize AI web fonts (Inter, Söhne, etc.), preserving fonts inside tables & drawings
+    ai_fonts = {"INTER", "SÖHNE", "SOEHNE", "SYSTEM-UI", "ROBOTO"}
     for rFonts in list(root.iter(f"{{{W_NS}}}rFonts")):
+        if _is_inside_table(rFonts) or _is_inside_drawing_or_shape(rFonts):
+            continue
+
         for attr in [f"{{{W_NS}}}ascii", f"{{{W_NS}}}hAnsi", f"{{{W_NS}}}cs"]:
             val = rFonts.get(attr)
             if val and val.upper() in ai_fonts:
@@ -349,6 +390,8 @@ def _fragment_and_inject_rsids(
             p.set(f"{{{W_NS}}}rsidP", random.choice(rsid_pool))
         rsids_assigned += 1
 
+        is_protected = _is_inside_table(p) or _is_inside_drawing_or_shape(p)
+
         # Process child runs
         runs = list(p.findall(f"{{{W_NS}}}r"))
         for r in runs:
@@ -357,6 +400,10 @@ def _fragment_and_inject_rsids(
             if random.random() < 0.25:
                 r.set(f"{{{W_NS}}}rsidRPr", random.choice(rsid_pool))
             rsids_assigned += 1
+
+            # Keep runs intact inside tables and drawings to protect spatial formatting
+            if is_protected:
+                continue
 
             # Avoid fragmenting runs containing non-text elements (drawings, fields, bookmarks)
             child_tags = [c.tag for c in r]

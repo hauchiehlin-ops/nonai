@@ -1,7 +1,7 @@
 {
-  "version": "1.4.3",
-  "release_date": "2026-10-24",
+  "version": "1.4.4",
+  "release_date": "2026-10-25",
   "bump_level": "patch",
-  "description": "fix(ui): resolve drag-and-drop failed to fetch by persisting file handle to input and preventing window navigation",
-  "timestamp": "2026-10-24T03:04:38.599768"
+  "description": "Cross-format forensic hardening (DOCX/PDF/MD/TXT), Claude Docs provenance eradication, Microsoft Word package synthesis, and neural transformer de-patterning.",
+  "timestamp": "2026-10-25T13:35:45.476222"
 }
