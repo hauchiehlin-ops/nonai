@@ -211,7 +211,126 @@ def test_docx_table_and_gantt_shading_preserved():
     print("test_docx_table_and_gantt_shading_preserved passed successfully!")
 
 
+def test_docx_rsid_parity_revision_coupling_and_yellow_highlight():
+    """
+    Verifies the 6 forensic upgrades + mandatory yellow highlight (<w:highlight w:val="yellow"/>):
+    1. Zero unregistered RSIDs between word/document.xml and word/settings.xml (#1).
+    2. cp:revision in docProps/core.xml is strictly greater than total RSIDs (#2).
+    3. No single RSID dominates >20% of paragraphs or characters (#9).
+    4. Multi-run split sentences in <w:p> are restructured and highlighted with <w:highlight w:val="yellow"/>.
+    5. Standalone transitions (首先, 其次, 最後, 此外) and non-standard spaces (\u2003, \u3000) are eliminated (#3, #5-#8).
+    """
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("[Content_Types].xml", b"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>""")
+
+        # Build 40 paragraphs with pre-existing unregistered RSIDs (e.g. 00DEAD01..00DEAD40)
+        # and dominant single-paste RSID 00PASTE1 on w:rsidP / w:rsidRPr
+        p_xml_list = []
+        # Paragraph 1: Split across 3 <w:r> runs with '首先，本研究旨在...進而...以期達到...之效益'
+        p_xml_list.append("""
+        <w:p w:rsidR="00PASTE1" w:rsidP="00PASTE1" w:rsidRPr="00DEAD01">
+          <w:r w:rsidR="00DEAD02"><w:t>首先，本研究</w:t></w:r>
+          <w:r w:rsidR="00DEAD03"><w:t>旨在建立高齡照護評估模型，進而探討</w:t></w:r>
+          <w:r w:rsidR="00DEAD04"><w:t>臨床落差\u2003，以期達到顯著提升照護品質之效益。</w:t></w:r>
+        </w:p>
+        """)
+        # Paragraph 2: '其次，...' with unanchored claim
+        p_xml_list.append("""
+        <w:p w:rsidR="00PASTE1" w:rsidP="00PASTE1" w:rsidRPr="00DEAD05">
+          <w:r><w:t>其次，研究顯示系統導入後滿意度顯著提升了 35.8%。此結果與近期實證相符 (Chen et al., 2024)。</w:t></w:r>
+        </w:p>
+        """)
+        # Paragraph 3: '最後，...' and '此外，...'
+        p_xml_list.append("""
+        <w:p w:rsidR="00PASTE1" w:rsidP="00PASTE1" w:rsidRPr="00DEAD06">
+          <w:r><w:t>最後，我們彙整了所有訪談紀錄\u3000。此外，本研究者與研究所團隊也針對大學生進行了系統性分析。</w:t></w:r>
+        </w:p>
+        """)
+        # Add 37 more paragraphs with dominant 00PASTE1 and distinct 00DEADxx RSIDs
+        for idx in range(7, 44):
+            p_xml_list.append(f"""
+            <w:p w:rsidR="00PASTE1" w:rsidP="00PASTE1" w:rsidRPr="00DEAD{idx:02d}">
+              <w:r w:rsidRPr="00DEAD{idx:02d}"><w:t>這是第 {idx} 段常規背景敘述文字，保持原本的實驗設計紀錄與觀察描述。</w:t></w:r>
+            </w:p>
+            """)
+
+        doc_xml_str = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    {"".join(p_xml_list)}
+    <w:sectPr w:rsidR="00DEAD99" w:rsidSect="00DEAD98"/>
+  </w:body>
+</w:document>"""
+        z.writestr("word/document.xml", doc_xml_str.encode("utf-8"))
+
+    res = sanitize_docx(buf.getvalue(), author_name="Prof. Lin", rsid_session_count=20)
+    out_zip = zipfile.ZipFile(io.BytesIO(res.cleaned_bytes), "r")
+
+    doc_root = etree.fromstring(out_zip.read("word/document.xml"))
+    settings_root = etree.fromstring(out_zip.read("word/settings.xml"))
+    core_root = etree.fromstring(out_zip.read("docProps/core.xml"))
+
+    # 1. Verify ZERO unregistered RSIDs in word/document.xml
+    registered_rsids = {
+        el.get(f"{{{W_NS}}}val").upper()
+        for el in settings_root.iter(f"{{{W_NS}}}rsid")
+        if el.get(f"{{{W_NS}}}val")
+    }
+    doc_rsids = set()
+    for el in doc_root.iter():
+        for k, v in el.attrib.items():
+            if "rsid" in k.lower():
+                doc_rsids.add(v.upper())
+
+    unregistered = doc_rsids - registered_rsids
+    assert len(unregistered) == 0, f"Found unregistered RSIDs in document.xml: {unregistered}"
+    assert "00PASTE1" not in doc_rsids, "Old dominant RSID 00PASTE1 was not purged!"
+
+    # 2. Verify cp:revision > len(registered_rsids)
+    cp_ns = "http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+    rev_text = core_root.find(f"{{{cp_ns}}}revision").text
+    rev_val = int(rev_text)
+    assert rev_val > len(registered_rsids), f"Revision ({rev_val}) must be > RSID count ({len(registered_rsids)})!"
+
+    # 3. Verify no single RSID dominates > 20% of paragraphs
+    p_rsid_counts = {}
+    all_ps = list(doc_root.iter(f"{{{W_NS}}}p"))
+    for p in all_ps:
+        r_val = p.get(f"{{{W_NS}}}rsidR")
+        p_rsid_counts[r_val] = p_rsid_counts.get(r_val, 0) + 1
+    max_share = max(p_rsid_counts.values()) / len(all_ps)
+    assert max_share <= 0.20, f"Single RSID still dominates {max_share:.1%} of paragraphs!"
+
+    # 4. Verify yellow highlight (<w:highlight w:val="yellow"/>) is present on modified spans
+    highlights = list(doc_root.iter(f"{{{W_NS}}}highlight"))
+    assert len(highlights) > 0, "Expected <w:highlight w:val='yellow'/> on modified runs!"
+    assert all(h.get(f"{{{W_NS}}}val") == "yellow" for h in highlights)
+    assert res.highlighted_changes > 0
+
+    # 5. Verify full text has no standalone 首先， / 其次， / 最後， / 此外，, no \u2003/\u3000, and no broken collocations
+    full_text = "".join(doc_root.itertext())
+    assert "首先，" not in full_text
+    assert "其次，" not in full_text
+    assert "最後，" not in full_text
+    assert "此外，" not in full_text
+    assert "\u2003" not in full_text
+    assert "\u3000" not in full_text
+    assert "研究者" in full_text, "Compound word '研究者' was corrupted!"
+    assert "研究所" in full_text, "Compound word '研究所' was corrupted!"
+    assert "大學生" in full_text, "Compound word '大學生' was corrupted!"
+    assert "系統性" in full_text, "Compound word '系統性' was corrupted!"
+
+    print("test_docx_rsid_parity_revision_coupling_and_yellow_highlight passed successfully!")
+
+
 if __name__ == "__main__":
     test_docx_sanitization()
     test_docx_windows_word_compatibility()
     test_docx_table_and_gantt_shading_preserved()
+    test_docx_rsid_parity_revision_coupling_and_yellow_highlight()

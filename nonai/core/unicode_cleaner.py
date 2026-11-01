@@ -8,7 +8,7 @@ import unicodedata
 from dataclasses import dataclass, field
 from typing import List, Dict, Tuple, Any
 
-# Map of specific invisible characters to descriptive names
+# Map of specific invisible characters and non-standard spaces to descriptive names
 INVISIBLE_CHAR_NAMES = {
     '\u200B': 'Zero-Width Space (ZWSP)',
     '\u200C': 'Zero-Width Non-Joiner (ZWNJ)',
@@ -16,6 +16,7 @@ INVISIBLE_CHAR_NAMES = {
     '\u2060': 'Word Joiner (WJ)',
     '\uFEFF': 'Zero-Width No-Break Space / BOM',
     '\u00AD': 'Soft Hyphen (SHY)',
+    '\u180E': 'Mongolian Vowel Separator (MVS)',
     '\u200E': 'Left-to-Right Mark (LRM)',
     '\u200F': 'Right-to-Left Mark (RLM)',
     '\u202A': 'Left-to-Right Embedding (LRE)',
@@ -23,22 +24,43 @@ INVISIBLE_CHAR_NAMES = {
     '\u202C': 'Pop Directional Formatting (PDF)',
     '\u202D': 'Left-to-Right Override (LRO)',
     '\u202E': 'Right-to-Left Override (RLO)',
+    '\u2061': 'Function Application',
+    '\u2062': 'Invisible Times',
+    '\u2063': 'Invisible Separator',
+    '\u2064': 'Invisible Plus',
     '\u2066': 'Left-to-Right Isolate (LRI)',
     '\u2067': 'Right-to-Left Isolate (RLI)',
     '\u2068': 'First Strong Isolate (FSI)',
     '\u2069': 'Pop Directional Isolate (PDI)',
     '\u00A0': 'Non-Breaking Space (NBSP)',
+    '\u1680': 'Ogham Space Mark',
+    '\u2000': 'En Quad',
+    '\u2001': 'Em Quad',
+    '\u2002': 'En Space',
+    '\u2003': 'Em Space',
+    '\u2004': 'Three-Per-Em Space',
+    '\u2005': 'Four-Per-Em Space',
+    '\u2006': 'Six-Per-Em Space',
+    '\u2007': 'Figure Space',
+    '\u2008': 'Punctuation Space',
+    '\u2009': 'Thin Space',
+    '\u200A': 'Hair Space',
+    '\u2028': 'Line Separator',
+    '\u2029': 'Paragraph Separator',
     '\u202F': 'Narrow No-Break Space (NNBSP)',
     '\u205F': 'Medium Mathematical Space (MMSP)',
+    '\u3000': 'Ideographic Space (Fullwidth Space)',
 }
 
 # Regex matching purely invisible and zero-width characters (to remove)
 ZERO_WIDTH_REGEX = re.compile(
-    r'[\u200B-\u200D\u2060\uFEFF\u00AD\u200E\u200F\u202A-\u202E\u2066-\u2069\uFE00-\uFE0F]'
+    r'[\u200B-\u200D\u2060\uFEFF\u00AD\u180E\u200E\u200F\u202A-\u202E\u2061-\u2064\u2066-\u206F\uFE00-\uFE0F]'
 )
 
-# Regex matching uncommon space characters that should be normalized to standard space
-ABNORMAL_SPACE_REGEX = re.compile(r'[\u00A0\u202F\u205F\u2007]')
+# Regex matching non-standard space characters that should be normalized to standard ASCII space (U+0020)
+ABNORMAL_SPACE_REGEX = re.compile(
+    r'[\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]'
+)
 
 @dataclass
 class UnicodeCleanResult:

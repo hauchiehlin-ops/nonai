@@ -52,8 +52,8 @@ class CleanTextRequest(BaseModel):
     enable_perturb: bool = True
     perturb_intensity: float = 0.65
     de_perfectionize_md: bool = True
-    auto_bind_citations: bool = False
-    hedge_isolated_claims: bool = False
+    auto_bind_citations: bool = True
+    hedge_isolated_claims: bool = True
 
 class ToggleWatcherRequest(BaseModel):
     active: bool
@@ -237,7 +237,8 @@ async def api_clean_file(
                 "missing_parts_synthesized": docx_res.missing_parts_synthesized,
                 "burstiness_boost": docx_res.stage1_restructure_metrics.get("burstiness_boost_percent", 0.0) if docx_res.stage1_restructure_metrics else 0.0,
                 "unanchored_claims_count": docx_res.stage2_fact_citation_audit.get("unanchored_claims_count", 0) if docx_res.stage2_fact_citation_audit else 0,
-                "fact_integrity_score": docx_res.stage2_fact_citation_audit.get("fact_integrity_score", 100) if docx_res.stage2_fact_citation_audit else 100
+                "fact_integrity_score": docx_res.stage2_fact_citation_audit.get("fact_integrity_score", 100) if docx_res.stage2_fact_citation_audit else 100,
+                "highlighted_changes": docx_res.highlighted_changes
             },
             "details": {
                 "rsid_pool": docx_res.rsid_pool,
@@ -252,6 +253,7 @@ async def api_clean_file(
                 "semantic_reorganized": docx_res.semantic_reorganized,
                 "claude_signatures_purged": docx_res.claude_signatures_purged,
                 "missing_parts_synthesized": docx_res.missing_parts_synthesized,
+                "highlighted_changes": docx_res.highlighted_changes,
                 "stage1_restructure": docx_res.stage1_restructure_metrics,
                 "stage2_fact_citation": docx_res.stage2_fact_citation_audit
             }

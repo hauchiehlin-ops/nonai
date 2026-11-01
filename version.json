@@ -1,7 +1,7 @@
 {
-  "version": "1.4.4",
-  "release_date": "2026-10-25",
-  "bump_level": "patch",
-  "description": "Cross-format forensic hardening (DOCX/PDF/MD/TXT), Claude Docs provenance eradication, Microsoft Word package synthesis, and neural transformer de-patterning.",
-  "timestamp": "2026-10-25T13:35:45.476222"
+  "version": "1.5.0",
+  "release_date": "2026-11-02",
+  "bump_level": "minor",
+  "description": "Paragraph-level DOCX sanitization, mandatory yellow highlight (<w:highlight w:val='yellow'/>) on modified spans, RSID/revision cross-file invariant enforcement, lexical boundary protection against adversarial defense, and full Unicode space normalization.",
+  "timestamp": "2026-11-02T06:54:49.097914"
 }

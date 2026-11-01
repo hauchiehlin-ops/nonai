@@ -342,45 +342,78 @@ def bind_citations_and_hedge(
             global_sent_cursor += 1
 
             has_anchor = bool(PATTERNS_CITATION_ANCHOR.search(s))
-            has_claim = bool(PATTERNS_PERCENTAGE.search(s) or PATTERNS_STATISTICAL.search(s) or PATTERNS_COMPARATIVE.search(s))
+            has_claim = bool(
+                PATTERNS_PERCENTAGE.search(s)
+                or PATTERNS_STATISTICAL.search(s)
+                or PATTERNS_COMPARATIVE.search(s)
+                or PATTERNS_ATTRIBUTION.search(s)
+            )
 
             if has_claim and not has_anchor:
-                # Find candidate anchor: check nearby sentences in global proximity window (offset +/- 3)
+                s_work = s
+                # First apply hedging to naked comparative / attribution triggers if enabled
+                if hedge_isolated_claims:
+                    hedge_map = {
+                        "研究表明": "實務脈絡觀察",
+                        "研究指出": "架構推演呈現",
+                        "研究顯示": "脈絡檢視反映",
+                        "研究發現": "實務觀察呈現",
+                        "研究證實": "實證檢驗反映",
+                        "文獻指出": "學理脈絡呈現",
+                        "文獻紀載": "既有脈絡記載",
+                        "文獻記載": "既有脈絡記載",
+                        "文獻顯示": "學理脈絡反映",
+                        "數據顯示": "觀測指標反映",
+                        "數據證實": "觀測結果呈現",
+                        "調查發現": "實務盤點反映",
+                        "調查顯示": "現場盤點呈現",
+                        "顯著提升": "帶來實質增益",
+                        "顯著降低": "呈現緩和走勢",
+                        "顯著增加": "呈現有感擴展",
+                        "顯著減少": "呈現收斂趨勢",
+                        "顯著高於": "優於既有基準",
+                        "顯著低於": "低於既有基準",
+                        "大幅成長": "呈現穩健擴展",
+                        "大幅下滑": "呈現明顯回落",
+                        "大幅領先": "展現相對優勢",
+                        "大幅超越": "突破既有基準",
+                    }
+                    for k_h, v_h in hedge_map.items():
+                        if k_h in s_work:
+                            s_work = s_work.replace(k_h, v_h)
+                            hedged_count += 1
+
+                # Re-check if sentence still contains a claim after hedging (e.g., percentage or statistical number)
+                still_has_claim = bool(
+                    PATTERNS_PERCENTAGE.search(s_work)
+                    or PATTERNS_STATISTICAL.search(s_work)
+                    or PATTERNS_COMPARATIVE.search(s_work)
+                    or PATTERNS_ATTRIBUTION.search(s_work)
+                )
+
+                # Find candidate anchor: check nearby sentences in proximity window (offset +/- 6, then nearest in doc)
                 target_anchor = None
-                if auto_bind_proximate:
-                    for offset in [1, -1, 2, -2, 3, -3]:
+                if auto_bind_proximate and (still_has_claim or not hedge_isolated_claims):
+                    for offset in [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6]:
                         chk_idx = curr_g_idx + offset
                         if chk_idx in global_anchors:
                             target_anchor = global_anchors[chk_idx]
                             break
+                    # Fallback to nearest anchor in the document if any exists
+                    if not target_anchor and global_anchors:
+                        nearest_idx = min(global_anchors.keys(), key=lambda k: abs(k - curr_g_idx))
+                        if abs(nearest_idx - curr_g_idx) <= 25:
+                            target_anchor = global_anchors[nearest_idx]
 
-                # Case A: Candidate citation found nearby -> Bind it to the sentence end
                 if auto_bind_proximate and target_anchor:
-                    # Insert right before ending punctuation
-                    if s.endswith(('。', '.', '！', '!', '？', '?')):
-                        s_bound = s[:-1].rstrip() + f" {target_anchor}" + s[-1]
+                    if s_work.endswith(('。', '.', '！', '!', '？', '?')):
+                        s_bound = s_work[:-1].rstrip() + f" {target_anchor}" + s_work[-1]
                     else:
-                        s_bound = s + f" {target_anchor}"
+                        s_bound = s_work + f" {target_anchor}"
                     new_sentences.append(s_bound)
                     bound_count += 1
-                # Case B: No nearby citation -> Apply academic hedging
-                elif hedge_isolated_claims:
-                    s_hedged = s
-                    if "研究表明" in s_hedged:
-                        s_hedged = s_hedged.replace("研究表明", "既有觀察指出")
-                        hedged_count += 1
-                    elif "研究指出" in s_hedged:
-                        s_hedged = s_hedged.replace("研究指出", "初步調研指出")
-                        hedged_count += 1
-                    elif "數據證實" in s_hedged:
-                        s_hedged = s_hedged.replace("數據證實", "觀測數據呈現")
-                        hedged_count += 1
-                    elif "顯著提升" in s_hedged:
-                        s_hedged = s_hedged.replace("顯著提升", "呈現實質增益")
-                        hedged_count += 1
-                    new_sentences.append(s_hedged)
                 else:
-                    new_sentences.append(s)
+                    new_sentences.append(s_work)
             else:
                 new_sentences.append(s)
 

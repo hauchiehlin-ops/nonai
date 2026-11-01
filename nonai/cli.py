@@ -41,6 +41,7 @@ def handle_clean(args):
         print("✅ DOCX 清洗完成！")
         print(f"   • 注入 RSID 會話數: {res.final_rsid_count} (原為 {res.original_rsid_count})")
         print(f"   • 碎片化 Runs 切分: {res.runs_split} 處")
+        print(f"   • 黃色螢光筆標示修改: {res.highlighted_changes} 處")
         print(f"   • 清除幽靈樣式/底色: {res.ghost_styles_removed} 處")
         print(f"   • 移除零寬字元: {res.unicode_chars_removed} 個")
         print(f"   • 偽裝編輯時間: {res.estimated_human_minutes} 分鐘 (Microsoft Office Word)")
