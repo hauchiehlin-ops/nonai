@@ -1,7 +1,7 @@
 {
-  "version": "1.5.1",
+  "version": "1.5.2",
   "release_date": "2026-11-02",
   "bump_level": "patch",
-  "description": "Strictly preserve 100% of existing punctuation marks across all text restructuring rules, performing lexical substitutions only with yellow fluorescent highlighting.",
-  "timestamp": "2026-11-02T08:42:10.141491"
+  "description": "PDF sanitizer preserves original Producer, Creator, CreationDate and ModDate verbatim; removed PDF generator spoofing option.",
+  "timestamp": "2026-11-02T09:31:20.471092"
 }

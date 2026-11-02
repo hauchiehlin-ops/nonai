@@ -1,14 +1,12 @@
 """
 PDF Metadata and Forensic Fingerprint Sanitizer
 Strips AI generator signatures, cleans per-page and catalog XMP streams,
-normalizes realistic human creation/modification timestamps, removes conversational AI traces,
-and spoofs genuine OS/Office PDF context (macOS Quartz or Microsoft Word).
+preserves the original creation/modification timestamps and the original
+Producer / Creator written by the exporting software.
 """
 
 import io
-import random
 import re
-from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List
 from pypdf import PdfReader, PdfWriter
@@ -34,13 +32,11 @@ def sanitize_pdf(
     spoof_target: str = "macOS"  # "macOS" or "Word"
 ) -> PdfSanitizeResult:
     """
-    Sanitizes PDF metadata and cross-format forensic signatures:
-    1. Strips/spoofs Producer (e.g. Quartz PDFContext or Microsoft: Print to PDF).
-    2. Strips/spoofs Creator (e.g. Pages or Microsoft Word for Microsoft 365).
-    3. Strips raw XMP metadata streams from catalog and individual page objects.
-    4. Simulates human typing intervals (CreationDate 45~150 mins before ModDate).
-    5. Cleans suspicious Title/Subject/Keywords containing AI prompts or IDs.
-    6. Performs deep binary scan to purge AI strings (Claude, Anthropic, ChatGPT, wkhtmltopdf, WeasyPrint).
+    Sanitizes PDF metadata:
+    1. Preserves the original Producer and Creator written by the exporting software (never rewritten).
+    2. Strips raw XMP metadata streams from catalog and individual page objects.
+    3. Sets Author; preserves the original CreationDate / ModDate verbatim (never fabricated).
+    4. Cleans suspicious Title text containing AI prompts or IDs.
     """
     reader = PdfReader(io.BytesIO(file_bytes))
     writer = PdfWriter()
@@ -56,22 +52,17 @@ def sanitize_pdf(
     orig_producer = str(orig_meta.get("/Producer", "None"))
     orig_creator = str(orig_meta.get("/Creator", "None"))
 
-    # Determine spoof targets
-    if spoof_target == "Word":
-        target_producer = "Microsoft: Print to PDF"
-        target_creator = "Microsoft Word for Microsoft 365"
-    else:  # default macOS Quartz
-        target_producer = "macOS Version 15.3.1 Quartz PDFContext"
-        target_creator = "Pages"
+    # Producer / Creator are preserved exactly as written by the exporting software.
+    # Rewriting them creates structural inconsistencies (e.g. a claimed macOS Quartz
+    # producer without a matching build number), which forensic tools flag as tampering.
+    # `spoof_target` is accepted only for backward compatibility and is ignored.
+    target_producer = orig_producer
+    target_creator = orig_creator
 
-    # Simulate realistic human editing duration
-    now = datetime.now(timezone.utc)
-    work_minutes = random.randint(45, 160)
-    created_dt = now - timedelta(minutes=work_minutes)
-    mod_dt = now - timedelta(minutes=random.randint(1, 8))
-
-    created_str = created_dt.strftime("D:%Y%m%d%H%M%SZ")
-    mod_str = mod_dt.strftime("D:%Y%m%d%H%M%SZ")
+    # CreationDate / ModDate are preserved verbatim (raw PDF date strings) for the same reason:
+    # fabricated timestamps that disagree with the file's internal structure read as tampering.
+    orig_creation_date = orig_meta.get("/CreationDate")
+    orig_mod_date = orig_meta.get("/ModDate")
 
     cleaned_fields = []
     ai_purged_count = 0
@@ -92,14 +83,19 @@ def sanitize_pdf(
 
     # Build clean metadata dictionary matching standard OS/Office PDF outputs
     clean_metadata: Dict[str, str] = {
-        "/Producer": target_producer,
-        "/Creator": target_creator,
         "/Author": author_name,
-        "/CreationDate": created_str,
-        "/ModDate": mod_str,
     }
     if clean_title:
         clean_metadata["/Title"] = clean_title
+    # Carry over the original Producer / Creator / dates verbatim (only if they existed)
+    if "/Producer" in orig_meta:
+        clean_metadata["/Producer"] = orig_producer
+    if "/Creator" in orig_meta:
+        clean_metadata["/Creator"] = orig_creator
+    if orig_creation_date is not None:
+        clean_metadata["/CreationDate"] = str(orig_creation_date)
+    if orig_mod_date is not None:
+        clean_metadata["/ModDate"] = str(orig_mod_date)
 
     # Remove AI flags in original metadata
     for k, v in orig_meta.items():
@@ -109,6 +105,16 @@ def sanitize_pdf(
             cleaned_fields.append(str(k))
 
     writer.add_metadata(clean_metadata)
+
+    # pypdf injects its own "/Producer: pypdf" by default; drop it if the source had no Producer
+    try:
+        info_obj = writer._info.get_object() if writer._info is not None else None
+        if info_obj is not None:
+            for key in ("/Producer", "/Creator"):
+                if key not in orig_meta and NameObject(key) in info_obj:
+                    del info_obj[NameObject(key)]
+    except Exception:
+        pass
 
     # Clean catalog XMP metadata
     xmp_cleaned = False
@@ -130,24 +136,6 @@ def sanitize_pdf(
     out_buf = io.BytesIO()
     writer.write(out_buf)
     pdf_bytes = out_buf.getvalue()
-
-    # Binary scan and purge for uncompressed AI strings in PDF trailers or comments
-    ai_binary_patterns = [
-        re.compile(rb'Claude\s*Docs(\s*node/[a-f0-9-]+@\d+)?', re.IGNORECASE),
-        re.compile(rb'wkhtmltopdf\s*[\d\.]*', re.IGNORECASE),
-        re.compile(rb'WeasyPrint\s*[\d\.]*', re.IGNORECASE),
-        re.compile(rb'ReportLab\s*PDF\s*Library', re.IGNORECASE),
-        re.compile(rb'iText\s*[\d\.]*', re.IGNORECASE),
-    ]
-
-    for pat in ai_binary_patterns:
-        matches = len(pat.findall(pdf_bytes))
-        if matches > 0:
-            ai_purged_count += matches
-            # Replace matched strings with spaces of equal length to preserve xref offsets
-            def blank_repl(m):
-                return b' ' * len(m.group(0))
-            pdf_bytes = pat.sub(blank_repl, pdf_bytes)
 
     return PdfSanitizeResult(
         cleaned_bytes=pdf_bytes,

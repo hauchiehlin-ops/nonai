@@ -50,16 +50,15 @@ def handle_clean(args):
     elif ext == ".pdf":
         with open(filepath, "rb") as f:
             in_bytes = f.read()
-        res = sanitize_pdf(in_bytes, author_name=args.author, spoof_target=args.spoof)
+        res = sanitize_pdf(in_bytes, author_name=args.author)
         if not out_path:
             out_path = os.path.splitext(filepath)[0] + "_clean.pdf"
         with open(out_path, "wb") as f:
             f.write(res.cleaned_bytes)
 
         print("✅ PDF 清洗完成！")
-        print(f"   • 原 Producer: {res.original_producer}")
-        print(f"   • 偽裝 Producer: {res.spoofed_producer}")
-        print(f"   • 偽裝 Creator: {res.spoofed_creator}")
+        print(f"   • Producer（保留原值）: {res.original_producer}")
+        print(f"   • Creator（保留原值）: {res.original_creator}")
         print(f"   • XMP 元資料流清洗: {'已剔除' if res.xmp_cleaned else '無殘留'}")
         print(f"   💾 已儲存至: {out_path}")
 
@@ -168,7 +167,7 @@ def main():
     p_clean.add_argument("--out", "-o", help="輸出路徑 (預設為 原檔名_clean)")
     p_clean.add_argument("--author", default="Author", help="偽裝作者名稱")
     p_clean.add_argument("--rsid-count", type=int, default=25, help="DOCX RSID 會話數")
-    p_clean.add_argument("--spoof", choices=["macOS", "Word"], default="macOS", help="PDF 偽裝目標")
+    p_clean.add_argument("--spoof", choices=["macOS", "Word"], default="macOS", help="（已停用，保留參數僅為相容；PDF Producer/Creator 一律保留原值）")
     p_clean.add_argument("--perturb", action="store_true", help="啟用統計浮水印擾動")
     p_clean.set_defaults(func=handle_clean)
 

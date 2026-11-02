@@ -333,7 +333,6 @@ document.addEventListener("DOMContentLoaded", () => {
     formData.append("file", file);
     formData.append("author", document.getElementById("cfgAuthor").value);
     formData.append("rsid_count", document.getElementById("cfgRsidCount").value);
-    formData.append("pdf_spoof", document.getElementById("cfgPdfSpoof").value);
     formData.append("enable_perturb", document.getElementById("cfgPerturb").checked);
 
     try {
@@ -456,18 +455,13 @@ document.addEventListener("DOMContentLoaded", () => {
       const pm = (t.modal_details && t.modal_details.pdf_producer) || {};
       fileStatsGrid.innerHTML = `
         <div class="stat-box clickable" data-inspect="pdf_producer">
-          <span class="title">${pm.orig_producer || "Original Producer"}</span>
-          <span class="val" style="font-size: 0.95rem; color: var(--danger);">${s.original_producer}</span>
+          <span class="title">Producer（保留原值）</span>
+          <span class="val" style="font-size: 0.95rem;">${s.original_producer}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
         <div class="stat-box clickable" data-inspect="pdf_producer">
-          <span class="title">${pm.spoofed_producer || "Spoofed Producer"}</span>
-          <span class="val" style="font-size: 0.95rem; color: var(--success);">${s.spoofed_producer}</span>
-          <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
-        </div>
-        <div class="stat-box clickable" data-inspect="pdf_producer">
-          <span class="title">${pm.spoofed_creator || "Spoofed Creator"}</span>
-          <span class="val" style="font-size: 0.95rem;">${s.spoofed_creator}</span>
+          <span class="title">Creator（保留原值）</span>
+          <span class="val" style="font-size: 0.95rem;">${s.original_creator}</span>
           <span class="stat-inspect-hint">${t.stat_inspect_hint}</span>
         </div>
         <div class="stat-box clickable" data-inspect="pdf_producer">
@@ -774,8 +768,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       case "pdf_producer":
         statusType = "success";
-        statusBadge = `已偽裝為 ${s.spoofed_producer || 'macOS Quartz PDFContext'}`;
-        summaryHtml = `系統已將原始生成器 <code>${s.original_producer || 'None'}</code> 覆寫偽裝為 <strong>${s.spoofed_producer}</strong>，Creator 改寫為 <strong>${s.spoofed_creator}</strong>，XMP 串流狀態：<strong>${s.xmp_cleaned ? '已徹底剝離淨化' : '純淨'}</strong>。`;
+        statusBadge = `Producer / Creator 保留原值`;
+        summaryHtml = `Producer <code>${s.original_producer || 'None'}</code> 與 Creator <code>${s.original_creator || 'None'}</code> 均保留匯出軟體寫入的原始值，未做任何改寫；XMP 串流狀態：<strong>${s.xmp_cleaned ? '已剝離' : '無'}</strong>。`
         break;
 
       case "markdown":
@@ -997,11 +991,11 @@ ${pool.slice(0, 6).map(id => `  &lt;w:rsid w:val="${id}"/&gt;`).join("\n")}
             <div style="font-family: var(--font-mono); font-size: 0.85rem;">${s.original_producer || "None"}</div>
           </div>
           <div class="compare-box after">
-            <span class="label">${m.spoofed_producer || "Spoofed Producer"}</span>
-            <div style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--success);">${s.spoofed_producer}</div>
+            <span class="label">Output Producer（保留原值）</span>
+            <div style="font-family: var(--font-mono); font-size: 0.85rem;">${s.original_producer || "None"}</div>
           </div>
         </div>
-        <p style="margin-top: 10px;"><strong>${m.spoofed_creator || "Spoofed Creator"}:</strong> <code>${s.spoofed_creator}</code><br>
+        <p style="margin-top: 10px;"><strong>Creator（保留原值）:</strong> <code>${s.original_creator || "None"}</code><br>
         <strong>XMP Stream Status:</strong> ${s.xmp_cleaned ? "✅ " + (t.unit_purged || "Purged") : "Clean"}</p>
       `;
     } else if (key === "markdown") {

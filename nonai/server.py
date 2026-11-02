@@ -190,7 +190,7 @@ async def api_clean_file(
     file: UploadFile = File(...),
     author: str = Form("Author"),
     rsid_count: int = Form(25),
-    pdf_spoof: str = Form("macOS"),
+    pdf_spoof: str = Form("macOS"),  # deprecated: ignored, Producer/Creator are always preserved
     enable_perturb: bool = Form(True),
     perturb_intensity: float = Form(0.7)
 ):
@@ -263,7 +263,6 @@ async def api_clean_file(
         pdf_res = sanitize_pdf(
             content,
             author_name=author,
-            spoof_target=pdf_spoof
         )
         mime = "application/pdf"
         file_b64 = base64.b64encode(pdf_res.cleaned_bytes).decode("ascii")
