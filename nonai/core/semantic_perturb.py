@@ -125,11 +125,13 @@ def perturb_text(
     text: str,
     intensity: float = 0.65,  # 0.0 to 1.0
     disrupt_transitions: bool = True,
-    vary_punctuation: bool = True
+    vary_punctuation: bool = False,
+    preserve_punctuation: bool = True
 ) -> PerturbResult:
     """
     Perturbs n-grams and token probabilities to disrupt statistical watermarks (SynthID),
-    breaks transformer detector classifier features, and enhances human sentence burstiness.
+    breaks transformer detector classifier features, and neutralizes clichés.
+    STRICT CONSTRAINT: When preserve_punctuation=True, all existing punctuation marks are 100% preserved.
     """
     if not text:
         return PerturbResult(text, text, 0, 0, 0.0)
@@ -138,23 +140,24 @@ def perturb_text(
     reorganized = 0
     output_text = text
 
-    # 1. Structural Regex Rewriting for Academic Discourse Markers
+    # 1. Structural Regex Rewriting for Academic Discourse Markers (preserving existing punctuation)
     if disrupt_transitions:
-        # Triples: 學術上... 實務上... 社會面上...
+        # Triples: 學術上... 實務上... 社會面上... (preserving original punctuation marks)
         triple_pat = re.compile(
-            r'學術上[，,]\s*(.*?)[。.]\s*實務上[，,]\s*(.*?)[。.]\s*社會面上[，,]\s*(.*?)[。.]'
+            r'學術上(?P<p1>[，,])\s*(?P<s1>.*?)(?P<t1>[。.]\s*)實務上(?P<p2>[，,])\s*(?P<s2>.*?)(?P<t2>[。.]\s*)社會面上(?P<p3>[，,])\s*(?P<s3>.*?)(?P<t3>[。.]\s*)'
         )
         def replace_triple(m):
             nonlocal replacements, reorganized
             replacements += 3
             reorganized += 1
             return (
-                f"在學術理論深化層面，{m.group(1)}；於產業實務應用中，{m.group(2)}；"
-                f"而在社會福祉與公共效益方面，{m.group(3)}。"
+                f"在學術理論深化層面{m.group('p1')}{m.group('s1')}{m.group('t1')}"
+                f"於產業實務應用中{m.group('p2')}{m.group('s2')}{m.group('t2')}"
+                f"而在社會福祉與公共效益方面{m.group('p3')}{m.group('s3')}{m.group('t3')}"
             )
         output_text = triple_pat.sub(replace_triple, output_text)
 
-        # 2. Chinese Cliché and AI Academic Phrase Replacements
+        # 2. Chinese Cliché and AI Academic Phrase Replacements (pure lexical replacement)
         for phrase, alternatives in AI_CLICHE_MAP_ZH.items():
             if phrase in output_text:
                 matches = output_text.count(phrase)
@@ -182,7 +185,8 @@ def perturb_text(
 
     # 4. Burstiness & Punctuation Rhythm Optimization
     # LLMs produce highly uniform clause lengths and repetitive semicolon patterns.
-    if vary_punctuation and intensity > 0.25:
+    # ONLY executed if preserve_punctuation is False.
+    if vary_punctuation and not preserve_punctuation and intensity > 0.25:
         lines = output_text.splitlines()
         new_lines = []
         for line in lines:

@@ -402,14 +402,16 @@ def _clean_text_nodes_and_perturb(
     root: etree._Element,
     enable_perturb: bool = True,
     intensity: float = 0.7,
-    highlight_changes: bool = True
+    highlight_changes: bool = True,
+    preserve_punctuation: bool = True
 ) -> Tuple[int, int, int, int, Dict[str, Any], Dict[str, Any]]:
     """
     1. Strips invisible unicode characters and normalizes non-standard spaces across ALL <w:t> elements.
     2. Performs paragraph-level (<w:p>) semantic restructuring, transition word neutralization
        (首先/其次/最後/此外), perturbation, and proximity citation anchoring & hedging.
+       STRICT CONSTRAINT: When preserve_punctuation=True, all existing punctuation marks are 100% preserved.
     3. Rebuilds modified paragraphs with mandatory yellow highlight (<w:highlight w:val="yellow"/>)
-       on all modified/inserted text segments.
+       ONLY on modified/inserted text spans, leaving unchanged punctuation and text intact.
     4. Runs Stage 1 and Stage 2 audits on the final document text.
     Returns (unicode_cleaned, semantic_replacements, semantic_reorganized, highlighted_changes, stage1_metrics, stage2_audit).
     """
@@ -474,7 +476,8 @@ def _clean_text_nodes_and_perturb(
                             orig_t,
                             target_cv=0.70,
                             enable_high_risk_residue_dissolve=True,
-                            enable_entity_diversity=True
+                            enable_entity_diversity=True,
+                            preserve_punctuation=preserve_punctuation
                         )
                         new_t = s_res.cleaned_text
                         total_replacements += (
@@ -490,7 +493,8 @@ def _clean_text_nodes_and_perturb(
                             new_t,
                             intensity=intensity,
                             disrupt_transitions=True,
-                            vary_punctuation=True
+                            vary_punctuation=False,
+                            preserve_punctuation=preserve_punctuation
                         )
                         new_t = p_res.perturbed_text
                         total_replacements += p_res.replacements_made
@@ -531,7 +535,8 @@ def _clean_text_nodes_and_perturb(
                         curr_t,
                         target_cv=0.70,
                         enable_high_risk_residue_dissolve=True,
-                        enable_entity_diversity=True
+                        enable_entity_diversity=True,
+                        preserve_punctuation=preserve_punctuation
                     )
                     curr_t = s_res.cleaned_text
                     total_replacements += (
@@ -548,7 +553,8 @@ def _clean_text_nodes_and_perturb(
                         curr_t,
                         intensity=intensity,
                         disrupt_transitions=True,
-                        vary_punctuation=True
+                        vary_punctuation=False,
+                        preserve_punctuation=preserve_punctuation
                     )
                     curr_t = p_res.perturbed_text
                     total_replacements += p_res.replacements_made
@@ -1124,7 +1130,8 @@ def sanitize_docx(
     simulate_typing_speed_wpm: int = 35,
     enable_perturb: bool = True,
     perturb_intensity: float = 0.7,
-    highlight_changes: bool = True
+    highlight_changes: bool = True,
+    preserve_punctuation: bool = True
 ) -> DocxSanitizeResult:
     """
     Sanitize a DOCX file:
@@ -1227,6 +1234,7 @@ def sanitize_docx(
             enable_perturb=enable_perturb,
             intensity=perturb_intensity,
             highlight_changes=highlight_changes,
+            preserve_punctuation=preserve_punctuation,
         )
 
         # 3C. Exhaustively purge old RSIDs, fragment runs, and inject balanced session RSIDs

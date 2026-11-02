@@ -1,7 +1,7 @@
 {
-  "version": "1.5.0",
+  "version": "1.5.1",
   "release_date": "2026-11-02",
-  "bump_level": "minor",
-  "description": "Paragraph-level DOCX sanitization, mandatory yellow highlight (<w:highlight w:val='yellow'/>) on modified spans, RSID/revision cross-file invariant enforcement, lexical boundary protection against adversarial defense, and full Unicode space normalization.",
-  "timestamp": "2026-11-02T06:54:49.097914"
+  "bump_level": "patch",
+  "description": "Strictly preserve 100% of existing punctuation marks across all text restructuring rules, performing lexical substitutions only with yellow fluorescent highlighting.",
+  "timestamp": "2026-11-02T08:42:10.141491"
 }

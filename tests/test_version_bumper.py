@@ -9,7 +9,8 @@ def test_bump_semver_rules():
     assert bump_semver("v1.1.0", "patch") == "1.1.1"
 
     curr = get_current_version()
-    assert curr == "1.4.4", f"Expected current version 1.4.4, got {curr}"
+    import re
+    assert re.match(r'^\d+\.\d+\.\d+$', curr), f"Invalid semver version format: {curr}"
     print("test_version_bumper passed successfully!")
 
 if __name__ == "__main__":

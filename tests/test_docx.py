@@ -329,8 +329,74 @@ def test_docx_rsid_parity_revision_coupling_and_yellow_highlight():
     print("test_docx_rsid_parity_revision_coupling_and_yellow_highlight passed successfully!")
 
 
+def test_docx_preserve_all_punctuations_and_highlight_replacements():
+    """
+    STRICT USER CONSTRAINT TEST:
+    'AI訊號的修正，若需更動文檔內容，必須保留既有的標點符號，僅需替換文字敘述並hightline'
+    Verifies that:
+    1. Every punctuation mark in the document is 100% preserved (exact type and order: ，;、?!:。).
+    2. Modified text spans are highlighted with <w:highlight w:val="yellow"/>.
+    3. Unmodified spans and punctuation remain clean without corruption.
+    """
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("[Content_Types].xml", b"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>""")
+        # Paragraph with distinct punctuations: ，, 、, ；, ！, ？, ：, 。
+        orig_para_text = "首先，這項研究旨在探討教育模式、其次；文獻指出其具有重要意義！深入探討至關重要？最後：我們將全面提升學習效益。"
+        doc_xml = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r><w:t>{orig_para_text}</w:t></w:r>
+    </w:p>
+  </w:body>
+</w:document>"""
+        z.writestr("word/document.xml", doc_xml.encode("utf-8"))
+
+    res = sanitize_docx(buf.getvalue(), author_name="Researcher", preserve_punctuation=True, highlight_changes=True)
+    out_zip = zipfile.ZipFile(io.BytesIO(res.cleaned_bytes), "r")
+    cleaned_root = etree.fromstring(out_zip.read("word/document.xml"))
+
+    cleaned_text = "".join(cleaned_root.itertext())
+
+    # 1. Verify text modification took place
+    assert "這項研究旨在" not in cleaned_text
+    assert "深入探討" not in cleaned_text
+    assert "全面提升" not in cleaned_text
+    assert "具有重要意義" not in cleaned_text
+
+    # 2. Extract punctuation sequences from original and cleaned text
+    from nonai.core.semantic_restructure import extract_punctuation_sequence
+    orig_puncs = extract_punctuation_sequence(orig_para_text)
+    cleaned_puncs = extract_punctuation_sequence(cleaned_text)
+
+    # STRICT ASSERTION: Punctuation sequence must be 100% IDENTICAL
+    assert orig_puncs == cleaned_puncs, f"Punctuation altered! Expected {orig_puncs}, but got {cleaned_puncs}"
+
+    # 3. Verify yellow highlight (<w:highlight w:val="yellow"/>) on modified text spans
+    highlights = list(cleaned_root.iter(f"{{{W_NS}}}highlight"))
+    assert len(highlights) > 0, "No highlights found on modified text!"
+    assert all(h.get(f"{{{W_NS}}}val") == "yellow" for h in highlights)
+
+    # 4. Verify runs with highlights contain the newly substituted text
+    highlighted_runs = [
+        r for r in cleaned_root.iter(f"{{{W_NS}}}r")
+        if r.find(f"{{{W_NS}}}rPr") is not None and r.find(f"{{{W_NS}}}rPr").find(f"{{{W_NS}}}highlight") is not None
+    ]
+    highlighted_texts = "".join("".join(r.itertext()) for r in highlighted_runs)
+    assert len(highlighted_texts) > 0
+
+    print("test_docx_preserve_all_punctuations_and_highlight_replacements passed successfully 100%!")
+
+
 if __name__ == "__main__":
     test_docx_sanitization()
     test_docx_windows_word_compatibility()
     test_docx_table_and_gantt_shading_preserved()
     test_docx_rsid_parity_revision_coupling_and_yellow_highlight()
+    test_docx_preserve_all_punctuations_and_highlight_replacements()
